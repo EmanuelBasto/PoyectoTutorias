@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorías - Tutor</title>
+    <link rel="icon" type="image/png" href="/ProyectosMM-main-main/ProyectosMM-main/Interfaces/5766243.png">
+    <link rel="stylesheet" href="tutores.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </div>
+                <div class="logo">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h1>Tutor</h1>
+                </div>
+                <div class="user-info">
+                    <span class="user-name" id="tutorName"></span>
+                    <div class="user-avatar" onclick="showUserMenu()">
+                        <span class="avatar-initials" id="tutorInitials"></span>
+                    </div>
+                    <div class="user-menu" id="userMenu" style="display: none;">
+                        <a href="#" onclick="showProfile()">
+                            <i class="fas fa-user"></i> Mi Perfil
+                        </a>
+                        <hr>
+                        <a href="#" onclick="logout()" class="logout-link">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeMobileMenu()"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="nav-menu">
+                <ul>
+                    <li class="nav-item active" data-section="inicio">
+                        <a href="#" class="nav-link" onclick="loadSection('inicio')">
+                            <i class="fas fa-home"></i>
+                            <span>Inicio</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-section="horarios">
+                        <a href="#" class="nav-link" onclick="loadSection('horarios')">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Gestión de Horarios</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-section="sesiones">
+                        <a href="#" class="nav-link" onclick="loadSection('sesiones')">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Sesiones</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-section="estudiantes">
+                        <a href="#" class="nav-link" onclick="loadSection('estudiantes')">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>Mis Estudiantes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-section="valoraciones">
+                        <a href="#" class="nav-link" onclick="loadSection('valoraciones')">
+                            <i class="fas fa-star"></i>
+                            <span>Valoraciones</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" data-section="notificaciones">
+                        <a href="#" class="nav-link" onclick="loadSection('notificaciones')">
+                            <i class="fas fa-bell"></i>
+                            <span>Notificaciones</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Contenido dinámico se carga aquí -->
+        </main>
+    </div>
+
+    <!-- Templates para las secciones -->
+    <template id="inicioTemplate">
+        <div class="content-header">
+            <h2>Bienvenido, <span id="tutorWelcomeName">""</span></h2>
+            <p>Gestiona tus sesiones de tutoría y mantén contacto con tus estudiantes</p>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-cards">
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="pendingRequests"></h3>
+                    <p>Solicitudes Pendientes</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="upcomingSessions"></h3>
+                    <p>Sesiones Programadas</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="averageRating"></h3>
+                    <p>Calificación Promedio</p>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="card-content">
+                    <h3 id="totalStudents"></h3>
+                    <p>Estudiantes Activos</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solicitudes Pendientes -->
+        <div class="pending-requests">
+            <div class="requests-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-clock"></i> Solicitudes Pendientes</h3>
+                    <button class="btn btn-primary" onclick="loadSection('sesiones')">
+                        <i class="fas fa-eye"></i> Ver Todas
+                    </button>
+                </div>
+                <div class="requests-list">
+                    <!-- Las solicitudes pendientes se cargarán dinámicamente desde el backend -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Próximas Sesiones -->
+        <div class="upcoming-sessions">
+            <div class="sessions-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-calendar-alt"></i> Próximas Sesiones</h3>
+                    <button class="btn btn-outline" onclick="loadSection('sesiones')">Ver Todas</button>
+                </div>
+                <div class="sessions-list">
+                    <!-- Las próximas sesiones se cargarán dinámicamente desde el backend -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Actividad Reciente -->
+        <div class="recent-activity">
+            <div class="activity-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-clock"></i> Actividad Reciente</h3>
+                    <button class="btn btn-outline" onclick="showAllActivity()">Ver Todo</button>
+                </div>
+                <div class="activity-list">
+                    <!-- Las actividades recientes se cargarán dinámicamente desde el backend -->
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Modal de Gestión de Horarios Simplificado -->
+    <div class="schedule-modal" id="scheduleModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-plus"></i> Configurar Disponibilidad</h3>
+                <span class="close" onclick="closeScheduleModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="simpleScheduleForm">
+                    <div class="form-group">
+                        <label for="scheduleDate">Fecha *</label>
+                        <input type="date" id="scheduleDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleSubject">Materia *</label>
+                        <select id="scheduleSubject" required>
+                            <option value="">Seleccionar materia</option>
+                            <option value="matematicas">Matemáticas</option>
+                            <option value="fisica">Física</option>
+                            <option value="quimica">Química</option>
+                            <option value="biologia">Biología</option>
+                            <option value="espanol">Español</option>
+                            <option value="historia">Historia</option>
+                            <option value="geografia">Geografía</option>
+                            <option value="ingles">Inglés</option>
+                            <option value="filosofia">Filosofía</option>
+                            <option value="literatura">Literatura</option>
+                            <option value="programacion">Programación</option>
+                            <option value="estadistica">Estadística</option>
+                            <option value="calculo">Cálculo</option>
+                            <option value="algebra">Álgebra</option>
+                            <option value="otra">Otra</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="scheduleStart">Hora de Inicio *</label>
+                            <input type="time" id="scheduleStart" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="scheduleEnd">Hora de Fin *</label>
+                            <input type="time" id="scheduleEnd" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleModality">Modalidad *</label>
+                        <select id="scheduleModality" required>
+                            <option value="">Seleccionar modalidad</option>
+                            <option value="presencial">Presencial</option>
+                            <option value="virtual">Virtual</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleDuration">Duración de Sesión</label>
+                        <select id="scheduleDuration">
+                            <option value="30">30 minutos</option>
+                            <option value="45" selected>45 minutos</option>
+                            <option value="60">60 minutos</option>
+                            <option value="90">90 minutos</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeScheduleModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSimpleSchedule()">Guardar Disponibilidad</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Asistencia -->
+    <div class="attendance-modal" id="attendanceModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-check"></i> Registrar Asistencia</h3>
+                <span class="close" onclick="closeAttendanceModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="attendance-form">
+                    <div class="session-info">
+                        <h4 id="attendanceSessionTitle">""</h4>
+                        <p id="attendanceStudentName">""</p>
+                        <p id="attendanceSessionTime">""</p>
+                    </div>
+                    
+                    <div class="attendance-options">
+                        <div class="form-group">
+                            <label>Estado de Asistencia *</label>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="attendance" value="attended" checked>
+                                    <span class="radio-label">
+                                        <i class="fas fa-check-circle"></i>
+                                        Asistió
+                                    </span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="attendance" value="no-show">
+                                    <span class="radio-label">
+                                        <i class="fas fa-times-circle"></i>
+                                        No Asistió
+                                    </span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="attendance" value="late">
+                                    <span class="radio-label">
+                                        <i class="fas fa-clock"></i>
+                                        Llegó Tarde
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="attendanceNotes">Notas de la Sesión</label>
+                            <textarea id="attendanceNotes" rows="4" placeholder="Describe brevemente cómo fue la sesión, temas tratados, progreso del estudiante..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="nextSession">Próxima Sesión Sugerida</label>
+                            <input type="date" id="nextSession">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAttendanceModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveAttendance()">Guardar Asistencia</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Perfil -->
+    <div class="profile-modal" id="profileModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user"></i> Mi Perfil</h3>
+                <span class="close" onclick="closeProfileModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="profile-content">
+                    <!-- Contenido del perfil se cargará desde el backend -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/Interfaces/backend-config.js"></script>
+    <script src="/Interfaces/integration-connections.js"></script>
+    <script src="tutores.js"></script>
+</body>
+</html>

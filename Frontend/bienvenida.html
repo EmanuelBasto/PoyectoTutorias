@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Bienvenido</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="panel-derecho">
+      <div class="login-box">
+        <h2>Hola mundo 👋</h2>
+        <p>Bienvenido, <span id="userEmail"></span></p>
+        <button onclick="cerrarSesion()">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const email = localStorage.getItem('userEmail');
+    document.getElementById('userEmail').textContent = email || 'Usuario';
+
+    function cerrarSesion() {
+      localStorage.removeItem('userEmail');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

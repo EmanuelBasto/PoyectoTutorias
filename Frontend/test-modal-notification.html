@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Notificación en Modal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-outline { background: transparent; color: #007bff; border: 1px solid #007bff; }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover {
+            color: #333;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+        
+        /* Estilos para notificación dentro del modal */
+        .modal-notification {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            background: #17a2b8;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 300px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-notification-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-notification i {
+            font-size: 10px;
+        }
+
+        .modal-notification.success {
+            background: #28a745;
+        }
+
+        .modal-notification.error {
+            background: #dc3545;
+        }
+
+        .modal-notification.warning {
+            background: #ffc107;
+            color: black;
+        }
+
+        .modal-notification.info {
+            background: #17a2b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prueba de Notificación en Modal</h1>
+        
+        <div class="test-section">
+            <h3>Instrucciones de Prueba</h3>
+            <ol>
+                <li>Haz clic en "Abrir Modal de Prueba"</li>
+                <li>Sin hacer cambios, haz clic en "Actualizar Disponibilidad"</li>
+                <li>Deberías ver una pequeña notificación tipo celular en la parte superior del modal</li>
+                <li>El modal NO se cerrará</li>
+                <li>La notificación desaparecerá automáticamente después de 3 segundos</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h3>Pruebas</h3>
+            <button class="btn btn-primary" onclick="openTestModal()">Abrir Modal de Prueba</button>
+            <button class="btn btn-success" onclick="testWithChanges()">Probar con Cambios</button>
+            <button class="btn btn-warning" onclick="testError()">Probar Error</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Datos de Prueba</h3>
+            <div id="testData">
+                <strong>Fecha:</strong> 2025-10-02<br>
+                <strong>Materia:</strong> Química<br>
+                <strong>Horario:</strong> 06:00 - 10:00<br>
+                <strong>Modalidad:</strong> Presencial<br>
+                <strong>Duración:</strong> 45 min
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de prueba -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Configurar Disponibilidad</h3>
+                <span class="close" onclick="closeTestModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="testForm">
+                    <div class="form-group">
+                        <label for="testDate">Fecha *</label>
+                        <input type="date" id="testDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testSubject">Materia *</label>
+                        <select id="testSubject" required>
+                            <option value="">Seleccionar materia</option>
+                            <option value="quimica">Química</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testStart">Hora de Inicio *</label>
+                        <input type="time" id="testStart" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testEnd">Hora de Fin *</label>
+                        <input type="time" id="testEnd" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testModality">Modalidad *</label>
+                        <select id="testModality" required>
+                            <option value="">Seleccionar modalidad</option>
+                            <option value="presencial">Presencial</option>
+                            <option value="virtual">Virtual</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testDuration">Duración de Sesión</label>
+                        <select id="testDuration">
+                            <option value="30">30 minutos</option>
+                            <option value="45" selected>45 minutos</option>
+                            <option value="60">60 minutos</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="closeTestModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="testSaveSchedule()" id="saveBtn">Guardar Disponibilidad</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let originalData = {
+            date: '2025-10-02',
+            subject: 'quimica',
+            startTime: '06:00',
+            endTime: '10:00',
+            modality: 'presencial',
+            duration: 45
+        };
+        
+        function openTestModal() {
+            const modal = document.getElementById('testModal');
+            modal.style.display = 'flex';
+            
+            // Poblar el formulario con los datos originales
+            populateForm(originalData);
+            
+            // Cambiar el botón para indicar edición
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.textContent = 'Actualizar Disponibilidad';
+            saveBtn.setAttribute('data-edit-id', 'test_123');
+        }
+        
+        function populateForm(data) {
+            document.getElementById('testDate').value = data.date;
+            document.getElementById('testSubject').value = data.subject;
+            document.getElementById('testStart').value = data.startTime;
+            document.getElementById('testEnd').value = data.endTime;
+            document.getElementById('testModality').value = data.modality;
+            document.getElementById('testDuration').value = data.duration;
+        }
+        
+        function testSaveSchedule() {
+            const saveBtn = document.getElementById('saveBtn');
+            const editId = saveBtn.getAttribute('data-edit-id');
+            
+            if (editId) {
+                // Obtener valores actuales del formulario
+                const currentDate = document.getElementById('testDate').value;
+                const currentSubject = document.getElementById('testSubject').value;
+                const currentStart = document.getElementById('testStart').value;
+                const currentEnd = document.getElementById('testEnd').value;
+                const currentModality = document.getElementById('testModality').value;
+                const currentDuration = parseInt(document.getElementById('testDuration').value);
+                
+                // Comparar con datos originales
+                const hasChanges = 
+                    originalData.date !== currentDate ||
+                    originalData.subject !== currentSubject ||
+                    originalData.startTime !== currentStart ||
+                    originalData.endTime !== currentEnd ||
+                    originalData.modality !== currentModality ||
+                    originalData.duration !== currentDuration;
+                
+                if (!hasChanges) {
+                    showModalNotification('No se realizaron cambios', 'info');
+                    return; // No cerrar el modal
+                } else {
+                    showModalNotification('Se detectaron cambios', 'success');
+                    return; // No cerrar el modal
+                }
+            }
+        }
+        
+        function testWithChanges() {
+            openTestModal();
+            // Cambiar un valor para probar
+            setTimeout(() => {
+                document.getElementById('testDuration').value = '60';
+                testSaveSchedule();
+            }, 1000);
+        }
+        
+        function testError() {
+            openTestModal();
+            setTimeout(() => {
+                showModalNotification('Error de prueba', 'error');
+            }, 1000);
+        }
+        
+        function closeTestModal() {
+            const modal = document.getElementById('testModal');
+            modal.style.display = 'none';
+            
+            // Resetear el botón
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.textContent = 'Guardar Disponibilidad';
+            saveBtn.removeAttribute('data-edit-id');
+        }
+        
+        function showModalNotification(message, type = 'info') {
+            // Crear notificación pequeña tipo celular dentro del modal
+            const modal = document.getElementById('testModal');
+            if (!modal) return;
+            
+            // Remover notificación anterior si existe
+            const existingNotification = modal.querySelector('.modal-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `modal-notification ${type}`;
+            notification.innerHTML = `
+                <div class="modal-notification-content">
+                    <i class="fas fa-${getNotificationIcon(type)}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            // Agregar al modal
+            modal.appendChild(notification);
+            
+            // Animar entrada
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // Auto-remover después de 3 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.opacity = '0';
+                    setTimeout(() => {
+                        if (notification.parentElement) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
+        
+        function getNotificationIcon(type) {
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            return icons[type] || 'info-circle';
+        }
+    </script>
+</body>
+</html>

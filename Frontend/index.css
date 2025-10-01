@@ -1,0 +1,223 @@
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Contenedor principal */
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f7f7f7;
+}
+
+/* Panel general dividido */
+.login-container {
+    display: flex;
+    width: 900px;
+    height: 520px;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Panel izquierdo */
+.panel-izquierdo {
+    flex: 1;
+    background: #7f0222; /* color primario */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.panel-izquierdo img {
+    width: 120px;
+    margin-bottom: 20px;
+}
+
+.panel-izquierdo h1 {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.panel-izquierdo p {
+    font-size: 15px;
+    color: #f2f2f2;
+}
+
+/* Panel derecho */
+.panel-derecho {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+}
+
+.login-box {
+    width: 80%;
+    max-width: 350px;
+}
+
+.login-box h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #7f0222;
+}
+
+/* Inputs */
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    font-size: 14px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+    font-weight: 500;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.input-group input:focus {
+    border-color: #d19800;
+    box-shadow: 0 0 5px rgba(209, 152, 0, 0.5);
+}
+
+/* Botón login */
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background: #7f0222;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.login-btn:hover {
+    background: #d19800;
+    color: #fff;
+}
+
+/* Links */
+.register-link, .forgot-link {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.register-link a, .forgot-link a {
+    color: #7f0222;
+    text-decoration: none;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.register-link a:hover, .forgot-link a:hover {
+    color: #d19800;
+}
+
+/* Modal recuperar */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 380px;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.modal-close {
+    float: right;
+    font-size: 20px;
+    cursor: pointer;
+    color: #7f0222;
+}
+        /* Extra para responsividad */
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+                width: 95%;
+                height: auto;
+            }
+
+            .panel-izquierdo, .panel-derecho {
+                flex: none;
+                width: 100%;
+                padding: 20px;
+                height: auto;
+            }
+
+            .panel-izquierdo {
+                text-align: center;
+            }
+
+            .panel-izquierdo img {
+                width: 90px;
+                margin-bottom: 15px;
+            }
+
+            .login-box {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-box h2 {
+                font-size: 20px;
+            }
+
+            .input-group input {
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            .login-btn {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+.panel-izquierdo img {
+  max-width: 260px;
+  opacity: 0.95;
+}

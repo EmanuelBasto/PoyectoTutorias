@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Fechas - Tutor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-outline { background: transparent; color: #007bff; border: 1px solid #007bff; }
+        .status-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            display: none;
+        }
+        .status-bar.success { background: #28a745; }
+        .status-bar.error { background: #dc3545; }
+        .status-bar.warning { background: #ffc107; color: black; }
+        .status-bar.info { background: #17a2b8; }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prueba de Manejo de Fechas</h1>
+        
+        <div class="test-section">
+            <h3>Crear Disponibilidad de Prueba</h3>
+            <div class="form-group">
+                <label for="testDate">Fecha:</label>
+                <input type="date" id="testDate" value="2025-10-02">
+            </div>
+            <div class="form-group">
+                <label for="testSubject">Materia:</label>
+                <select id="testSubject">
+                    <option value="quimica">Química</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="testStart">Hora Inicio:</label>
+                <input type="time" id="testStart" value="06:00">
+            </div>
+            <div class="form-group">
+                <label for="testEnd">Hora Fin:</label>
+                <input type="time" id="testEnd" value="10:00">
+            </div>
+            <div class="form-group">
+                <label for="testModality">Modalidad:</label>
+                <select id="testModality">
+                    <option value="presencial">Presencial</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="createTestAvailability()">Crear Disponibilidad</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Disponibilidades Guardadas</h3>
+            <div id="availabilityList">
+                <!-- Se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Información de Debug</h3>
+            <div id="debugInfo" class="debug-info">
+                <!-- Información de debug -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createTestAvailability() {
+            const testData = {
+                id: 'avail_test_' + Date.now(),
+                date: document.getElementById('testDate').value,
+                subject: document.getElementById('testSubject').value,
+                startTime: document.getElementById('testStart').value,
+                endTime: document.getElementById('testEnd').value,
+                modality: document.getElementById('testModality').value,
+                duration: 45,
+                createdAt: new Date().toISOString()
+            };
+            
+            console.log('Creando disponibilidad:', testData);
+            updateDebugInfo('Creando disponibilidad: ' + JSON.stringify(testData, null, 2));
+            
+            // Guardar en localStorage
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            tutorAvailability.push(testData);
+            localStorage.setItem('tutorAvailability', JSON.stringify(tutorAvailability));
+            
+            showNotification('Disponibilidad creada', 'success');
+            loadAvailabilityList();
+        }
+        
+        function loadAvailabilityList() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const container = document.getElementById('availabilityList');
+            
+            if (tutorAvailability.length === 0) {
+                container.innerHTML = '<p>No hay disponibilidades guardadas</p>';
+                return;
+            }
+            
+            container.innerHTML = tutorAvailability.map(item => `
+                <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <strong>ID:</strong> ${item.id}<br>
+                    <strong>Fecha guardada:</strong> ${item.date}<br>
+                    <strong>Fecha como objeto Date:</strong> ${new Date(item.date)}<br>
+                    <strong>Fecha ISO:</strong> ${new Date(item.date).toISOString()}<br>
+                    <strong>Materia:</strong> ${item.subject}<br>
+                    <strong>Horario:</strong> ${item.startTime} - ${item.endTime}<br>
+                    <strong>Modalidad:</strong> ${item.modality}<br>
+                    <button class="btn btn-warning" onclick="testEditAvailability('${item.id}')">Probar Edición</button>
+                    <button class="btn btn-danger" onclick="deleteTestAvailability('${item.id}')">Eliminar</button>
+                </div>
+            `).join('');
+        }
+        
+        function testEditAvailability(availabilityId) {
+            console.log('Probando edición de:', availabilityId);
+            updateDebugInfo('Probando edición de: ' + availabilityId);
+            
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const availability = tutorAvailability.find(av => av.id === availabilityId);
+            
+            if (availability) {
+                console.log('Disponibilidad encontrada:', availability);
+                updateDebugInfo('Disponibilidad encontrada: ' + JSON.stringify(availability, null, 2));
+                
+                // Simular la función populateScheduleForm
+                const dateInput = document.getElementById('testDate');
+                if (dateInput) {
+                    console.log('Fecha original:', availability.date);
+                    console.log('Fecha como Date:', new Date(availability.date));
+                    console.log('Fecha ISO:', new Date(availability.date).toISOString());
+                    console.log('Fecha split:', new Date(availability.date).toISOString().split('T')[0]);
+                    
+                    // Probar diferentes formas de asignar la fecha
+                    dateInput.value = availability.date;
+                    
+                    console.log('Valor asignado al input:', dateInput.value);
+                    updateDebugInfo(`Fecha asignada: ${availability.date} -> Input: ${dateInput.value}`);
+                    
+                    showNotification('Fecha cargada en el formulario', 'info');
+                }
+            } else {
+                console.error('Disponibilidad no encontrada');
+                updateDebugInfo('Disponibilidad no encontrada');
+            }
+        }
+        
+        function deleteTestAvailability(availabilityId) {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const filteredAvailability = tutorAvailability.filter(av => av.id !== availabilityId);
+            localStorage.setItem('tutorAvailability', JSON.stringify(filteredAvailability));
+            showNotification('Disponibilidad eliminada', 'success');
+            loadAvailabilityList();
+        }
+        
+        function updateDebugInfo(message) {
+            const debugInfo = document.getElementById('debugInfo');
+            if (debugInfo) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugInfo.textContent += `[${timestamp}] ${message}\n`;
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `status-bar ${type}`;
+            notification.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: 10px;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        // Cargar lista al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Página de prueba de fechas cargada');
+            updateDebugInfo('Página de prueba inicializada');
+            loadAvailabilityList();
+        });
+    </script>
+</body>
+</html>

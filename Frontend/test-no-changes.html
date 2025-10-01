@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Notificación "No se realizaron cambios"</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-outline { background: transparent; color: #007bff; border: 1px solid #007bff; }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover {
+            color: #333;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prueba de Notificación "No se realizaron cambios"</h1>
+        
+        <div class="test-section">
+            <h3>Crear Disponibilidad de Prueba</h3>
+            <button class="btn btn-primary" onclick="createTestData()">Crear Datos de Prueba</button>
+            <button class="btn btn-success" onclick="openTestModal()">Abrir Modal de Prueba</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Instrucciones de Prueba</h3>
+            <ol>
+                <li>Haz clic en "Crear Datos de Prueba" para crear una disponibilidad</li>
+                <li>Haz clic en "Abrir Modal de Prueba" para abrir el modal</li>
+                <li>Sin hacer cambios, haz clic en "Actualizar Disponibilidad"</li>
+                <li>Deberías ver la notificación "No se realizaron cambios" encima del modal</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h3>Datos Actuales</h3>
+            <div id="currentData">
+                <!-- Se mostrarán los datos actuales -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de prueba -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Configurar Disponibilidad</h3>
+                <span class="close" onclick="closeTestModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="testForm">
+                    <div class="form-group">
+                        <label for="testDate">Fecha *</label>
+                        <input type="date" id="testDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testSubject">Materia *</label>
+                        <select id="testSubject" required>
+                            <option value="">Seleccionar materia</option>
+                            <option value="quimica">Química</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testStart">Hora de Inicio *</label>
+                        <input type="time" id="testStart" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testEnd">Hora de Fin *</label>
+                        <input type="time" id="testEnd" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testModality">Modalidad *</label>
+                        <select id="testModality" required>
+                            <option value="">Seleccionar modalidad</option>
+                            <option value="presencial">Presencial</option>
+                            <option value="virtual">Virtual</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testDuration">Duración de Sesión</label>
+                        <select id="testDuration">
+                            <option value="30">30 minutos</option>
+                            <option value="45" selected>45 minutos</option>
+                            <option value="60">60 minutos</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="closeTestModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="testSaveSchedule()" id="saveBtn">Guardar Disponibilidad</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testAvailability = null;
+        
+        function createTestData() {
+            testAvailability = {
+                id: 'avail_test_123',
+                date: '2025-10-02',
+                subject: 'quimica',
+                startTime: '06:00',
+                endTime: '10:00',
+                modality: 'presencial',
+                duration: 45
+            };
+            
+            // Guardar en localStorage
+            localStorage.setItem('tutorAvailability', JSON.stringify([testAvailability]));
+            
+            showNotification('Datos de prueba creados', 'success');
+            updateCurrentData();
+        }
+        
+        function openTestModal() {
+            if (!testAvailability) {
+                showNotification('Primero crea los datos de prueba', 'warning');
+                return;
+            }
+            
+            const modal = document.getElementById('testModal');
+            modal.style.display = 'flex';
+            
+            // Poblar el formulario con los datos existentes
+            populateTestForm(testAvailability);
+            
+            // Cambiar el botón para indicar edición
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.textContent = 'Actualizar Disponibilidad';
+            saveBtn.setAttribute('data-edit-id', testAvailability.id);
+        }
+        
+        function populateTestForm(availability) {
+            document.getElementById('testDate').value = availability.date;
+            document.getElementById('testSubject').value = availability.subject;
+            document.getElementById('testStart').value = availability.startTime;
+            document.getElementById('testEnd').value = availability.endTime;
+            document.getElementById('testModality').value = availability.modality;
+            document.getElementById('testDuration').value = availability.duration;
+        }
+        
+        function testSaveSchedule() {
+            const saveBtn = document.getElementById('saveBtn');
+            const editId = saveBtn.getAttribute('data-edit-id');
+            
+            if (editId) {
+                // Simular la lógica de verificación de cambios
+                const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+                const existingAvailability = tutorAvailability.find(av => av.id === editId);
+                
+                if (existingAvailability) {
+                    // Obtener valores actuales del formulario
+                    const currentDate = document.getElementById('testDate').value;
+                    const currentSubject = document.getElementById('testSubject').value;
+                    const currentStart = document.getElementById('testStart').value;
+                    const currentEnd = document.getElementById('testEnd').value;
+                    const currentModality = document.getElementById('testModality').value;
+                    const currentDuration = parseInt(document.getElementById('testDuration').value);
+                    
+                    // Comparar todos los campos para detectar cambios
+                    const hasChanges = 
+                        existingAvailability.date !== currentDate ||
+                        existingAvailability.subject !== currentSubject ||
+                        existingAvailability.startTime !== currentStart ||
+                        existingAvailability.endTime !== currentEnd ||
+                        existingAvailability.modality !== currentModality ||
+                        existingAvailability.duration !== currentDuration;
+                    
+                    if (!hasChanges) {
+                        showNotification('No se realizaron cambios', 'info');
+                        closeTestModal();
+                        return;
+                    } else {
+                        showNotification('Se detectaron cambios', 'success');
+                        closeTestModal();
+                        return;
+                    }
+                }
+            }
+            
+            showNotification('Error en la prueba', 'error');
+        }
+        
+        function closeTestModal() {
+            const modal = document.getElementById('testModal');
+            modal.style.display = 'none';
+            
+            // Resetear el botón
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.textContent = 'Guardar Disponibilidad';
+            saveBtn.removeAttribute('data-edit-id');
+        }
+        
+        function updateCurrentData() {
+            const container = document.getElementById('currentData');
+            if (testAvailability) {
+                container.innerHTML = `
+                    <strong>ID:</strong> ${testAvailability.id}<br>
+                    <strong>Fecha:</strong> ${testAvailability.date}<br>
+                    <strong>Materia:</strong> ${testAvailability.subject}<br>
+                    <strong>Horario:</strong> ${testAvailability.startTime} - ${testAvailability.endTime}<br>
+                    <strong>Modalidad:</strong> ${testAvailability.modality}<br>
+                    <strong>Duración:</strong> ${testAvailability.duration} min
+                `;
+            } else {
+                container.innerHTML = '<p>No hay datos de prueba creados</p>';
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '10000';
+            notification.style.display = 'block';
+            notification.style.backgroundColor = getNotificationColor(type);
+            notification.style.color = type === 'warning' ? 'black' : 'white';
+            notification.style.padding = '15px 20px';
+            notification.style.borderRadius = '8px';
+            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+            notification.style.maxWidth = '400px';
+            notification.style.fontSize = '14px';
+            notification.style.fontWeight = '500';
+            notification.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: 10px;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.opacity = '0';
+                    notification.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => {
+                        if (notification.parentElement) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 4000);
+        }
+        
+        function getNotificationColor(type) {
+            const colors = {
+                success: '#28a745',
+                error: '#dc3545',
+                warning: '#ffc107',
+                info: '#17a2b8'
+            };
+            return colors[type] || '#17a2b8';
+        }
+        
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentData();
+        });
+    </script>
+</body>
+</html>

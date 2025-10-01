@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Botones - Tutor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-outline { background: transparent; color: #007bff; border: 1px solid #007bff; }
+        .status-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            z-index: 1000;
+            display: none;
+        }
+        .status-bar.success { background: #28a745; }
+        .status-bar.error { background: #dc3545; }
+        .status-bar.warning { background: #ffc107; color: black; }
+        .status-bar.info { background: #17a2b8; }
+        .availability-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+        }
+        .availability-info {
+            flex: 1;
+        }
+        .availability-main {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+        .availability-main .date {
+            font-weight: 600;
+            color: #7f0222;
+            font-size: 1rem;
+            background: #fff3cd;
+            border: 1px solid #d19800;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+        }
+        .availability-main .time {
+            font-weight: 500;
+            color: #333;
+        }
+        .availability-details {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .availability-details span {
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .availability-details .subject {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .availability-details .modality.presencial {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .availability-details .modality.virtual {
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #99d3ff;
+        }
+        .availability-details .duration {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .availability-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prueba de Funcionalidad de Botones</h1>
+        
+        <div class="test-section">
+            <h3>Pruebas de Funciones</h3>
+            <button class="btn btn-primary" onclick="testOpenModal()">Probar Abrir Modal</button>
+            <button class="btn btn-success" onclick="testSaveSchedule()">Probar Guardar</button>
+            <button class="btn btn-warning" onclick="testEditAvailability()">Probar Editar</button>
+            <button class="btn btn-danger" onclick="testDeleteAvailability()">Probar Eliminar</button>
+            <button class="btn btn-outline" onclick="loadTestData()">Cargar Datos de Prueba</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Disponibilidades de Prueba</h3>
+            <div id="testAvailabilityList">
+                <!-- Se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Información de Debug</h3>
+            <div id="debugInfo" class="debug-info">
+                <!-- Información de debug -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de prueba -->
+    <div id="scheduleModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
+            <h3>Configurar Disponibilidad</h3>
+            <form id="simpleScheduleForm">
+                <div style="margin: 15px 0;">
+                    <label for="scheduleDate">Fecha *</label>
+                    <input type="date" id="scheduleDate" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <label for="scheduleSubject">Materia *</label>
+                    <select id="scheduleSubject" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                        <option value="">Seleccionar materia</option>
+                        <option value="matematicas">Matemáticas</option>
+                        <option value="fisica">Física</option>
+                        <option value="quimica">Química</option>
+                        <option value="biologia">Biología</option>
+                        <option value="espanol">Español</option>
+                        <option value="historia">Historia</option>
+                        <option value="geografia">Geografía</option>
+                        <option value="ingles">Inglés</option>
+                        <option value="filosofia">Filosofía</option>
+                        <option value="literatura">Literatura</option>
+                        <option value="programacion">Programación</option>
+                        <option value="estadistica">Estadística</option>
+                        <option value="calculo">Cálculo</option>
+                        <option value="algebra">Álgebra</option>
+                        <option value="otra">Otra</option>
+                    </select>
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <label for="scheduleStart">Hora de Inicio *</label>
+                    <input type="time" id="scheduleStart" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <label for="scheduleEnd">Hora de Fin *</label>
+                    <input type="time" id="scheduleEnd" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <label for="scheduleModality">Modalidad *</label>
+                    <select id="scheduleModality" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                        <option value="">Seleccionar modalidad</option>
+                        <option value="presencial">Presencial</option>
+                        <option value="virtual">Virtual</option>
+                        <option value="both">Presencial/Virtual</option>
+                    </select>
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <label for="scheduleDuration">Duración (minutos)</label>
+                    <select id="scheduleDuration" style="width: 100%; padding: 8px; margin-top: 5px;">
+                        <option value="30">30 min</option>
+                        <option value="45" selected>45 min</option>
+                        <option value="60">60 min</option>
+                        <option value="90">90 min</option>
+                        <option value="120">120 min</option>
+                    </select>
+                </div>
+                
+                <div style="margin: 20px 0; text-align: right;">
+                    <button type="button" class="btn btn-outline" onclick="closeScheduleModal()" style="margin-right: 10px;">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSimpleSchedule()">Guardar Disponibilidad</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Funciones de prueba simplificadas
+        function testOpenModal() {
+            console.log('Probando abrir modal...');
+            try {
+                openScheduleModal();
+                showNotification('Modal abierto exitosamente', 'success');
+                updateDebugInfo('Modal abierto correctamente');
+            } catch (error) {
+                console.error('Error abriendo modal:', error);
+                showNotification('Error abriendo modal: ' + error.message, 'error');
+                updateDebugInfo('Error abriendo modal: ' + error.message);
+            }
+        }
+
+        function testSaveSchedule() {
+            console.log('Probando guardar disponibilidad...');
+            try {
+                // Llenar formulario con datos de prueba
+                document.getElementById('scheduleDate').value = '2025-01-15';
+                document.getElementById('scheduleSubject').value = 'matematicas';
+                document.getElementById('scheduleStart').value = '09:00';
+                document.getElementById('scheduleEnd').value = '10:00';
+                document.getElementById('scheduleModality').value = 'presencial';
+                document.getElementById('scheduleDuration').value = '45';
+                
+                saveSimpleSchedule();
+                showNotification('Guardado probado exitosamente', 'success');
+                updateDebugInfo('Guardado probado correctamente');
+            } catch (error) {
+                console.error('Error probando guardado:', error);
+                showNotification('Error probando guardado: ' + error.message, 'error');
+                updateDebugInfo('Error probando guardado: ' + error.message);
+            }
+        }
+
+        function testEditAvailability() {
+            console.log('Probando editar disponibilidad...');
+            try {
+                const testId = 'avail_test_123';
+                editAvailability(testId);
+                showNotification('Edición probada exitosamente', 'success');
+                updateDebugInfo('Edición probada correctamente');
+            } catch (error) {
+                console.error('Error probando edición:', error);
+                showNotification('Error probando edición: ' + error.message, 'error');
+                updateDebugInfo('Error probando edición: ' + error.message);
+            }
+        }
+
+        function testDeleteAvailability() {
+            console.log('Probando eliminar disponibilidad...');
+            try {
+                const testId = 'avail_test_123';
+                deleteAvailability(testId);
+                showNotification('Eliminación probada exitosamente', 'success');
+                updateDebugInfo('Eliminación probada correctamente');
+            } catch (error) {
+                console.error('Error probando eliminación:', error);
+                showNotification('Error probando eliminación: ' + error.message, 'error');
+                updateDebugInfo('Error probando eliminación: ' + error.message);
+            }
+        }
+
+        function loadTestData() {
+            console.log('Cargando datos de prueba...');
+            try {
+                const testData = [
+                    {
+                        id: 'avail_test_1',
+                        date: '2025-01-15',
+                        subject: 'matematicas',
+                        startTime: '09:00',
+                        endTime: '10:00',
+                        modality: 'presencial',
+                        duration: 45
+                    },
+                    {
+                        id: 'avail_test_2',
+                        date: '2025-01-16',
+                        subject: 'fisica',
+                        startTime: '14:00',
+                        endTime: '15:00',
+                        modality: 'virtual',
+                        duration: 60
+                    }
+                ];
+                
+                localStorage.setItem('tutorAvailability', JSON.stringify(testData));
+                displayTestAvailability(testData);
+                showNotification('Datos de prueba cargados', 'success');
+                updateDebugInfo('Datos de prueba cargados: ' + testData.length + ' elementos');
+            } catch (error) {
+                console.error('Error cargando datos de prueba:', error);
+                showNotification('Error cargando datos: ' + error.message, 'error');
+                updateDebugInfo('Error cargando datos: ' + error.message);
+            }
+        }
+
+        function displayTestAvailability(availability) {
+            const container = document.getElementById('testAvailabilityList');
+            if (!container) return;
+            
+            if (availability.length === 0) {
+                container.innerHTML = '<p>No hay disponibilidades de prueba</p>';
+                return;
+            }
+            
+            container.innerHTML = availability.map(item => `
+                <div class="availability-item" data-id="${item.id}">
+                    <div class="availability-info">
+                        <div class="availability-main">
+                            <span class="date">${formatDate(item.date) || ''}</span>
+                            <span class="time">${formatTime(item.startTime) || ''} - ${formatTime(item.endTime) || ''}</span>
+                        </div>
+                        <div class="availability-details">
+                            <span class="subject">${getSubjectName(item.subject) || ''}</span>
+                            <span class="modality ${item.modality || ''}">${getModalityName(item.modality) || ''}</span>
+                            <span class="duration">${item.duration || 45} min</span>
+                        </div>
+                    </div>
+                    <div class="availability-actions">
+                        <button class="btn btn-outline" onclick="editAvailability('${item.id}')" data-edit-id="${item.id}">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteAvailability('${item.id}')" data-delete-id="${item.id}">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateDebugInfo(message) {
+            const debugInfo = document.getElementById('debugInfo');
+            if (debugInfo) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugInfo.innerHTML += `[${timestamp}] ${message}<br>`;
+            }
+        }
+
+        // Funciones auxiliares
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'p. m.' : 'a. m.';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            const dayName = days[date.getDay()];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${dayName} ${day}/${month}/${year}`;
+        }
+
+        function getSubjectName(subjectValue) {
+            const subjects = {
+                'matematicas': 'Matemáticas',
+                'fisica': 'Física',
+                'quimica': 'Química',
+                'biologia': 'Biología',
+                'espanol': 'Español',
+                'historia': 'Historia',
+                'geografia': 'Geografía',
+                'ingles': 'Inglés',
+                'filosofia': 'Filosofía',
+                'literatura': 'Literatura',
+                'programacion': 'Programación',
+                'estadistica': 'Estadística',
+                'calculo': 'Cálculo',
+                'algebra': 'Álgebra',
+                'otra': 'Otra'
+            };
+            return subjects[subjectValue] || subjectValue;
+        }
+
+        function getModalityName(modality) {
+            const modalities = {
+                'presencial': 'Presencial',
+                'virtual': 'Virtual',
+                'both': 'Presencial/Virtual'
+            };
+            return modalities[modality] || modality;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `status-bar ${type}`;
+            notification.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; margin-left: 10px;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Cargar datos de prueba al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Página de prueba cargada');
+            updateDebugInfo('Página de prueba inicializada');
+        });
+    </script>
+</body>
+</html>

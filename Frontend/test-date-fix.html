@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Corrección de Fechas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .availability-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+        }
+        .availability-info {
+            flex: 1;
+        }
+        .availability-main {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+        .availability-main .date {
+            font-weight: 600;
+            color: #7f0222;
+            font-size: 1rem;
+            background: #fff3cd;
+            border: 1px solid #d19800;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+        }
+        .availability-main .time {
+            font-weight: 500;
+            color: #333;
+        }
+        .availability-details {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .availability-details span {
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .availability-details .subject {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .availability-details .modality.presencial {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .availability-details .duration {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .availability-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover {
+            color: #333;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prueba de Corrección de Fechas</h1>
+        
+        <div class="test-section">
+            <h3>Crear Disponibilidad de Prueba</h3>
+            <button class="btn btn-primary" onclick="createTestAvailability()">Crear Disponibilidad para 02/10/2025</button>
+            <button class="btn btn-success" onclick="loadAvailabilityList()">Recargar Lista</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Disponibilidades Actuales</h3>
+            <div id="availabilityList">
+                <!-- Se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Instrucciones</h3>
+            <ol>
+                <li>Haz clic en "Crear Disponibilidad para 02/10/2025"</li>
+                <li>Verifica que en la lista aparezca "Jueves 2/Oct/2025"</li>
+                <li>Haz clic en "Editar" de esa disponibilidad</li>
+                <li>Verifica que en el modal aparezca "2025-10-02" (no 2025-10-03)</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Modal de prueba -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Configurar Disponibilidad</h3>
+                <span class="close" onclick="closeTestModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="testForm">
+                    <div class="form-group">
+                        <label for="testDate">Fecha *</label>
+                        <input type="date" id="testDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testSubject">Materia *</label>
+                        <select id="testSubject" required>
+                            <option value="">Seleccionar materia</option>
+                            <option value="quimica">Química</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testStart">Hora de Inicio *</label>
+                        <input type="time" id="testStart" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testEnd">Hora de Fin *</label>
+                        <input type="time" id="testEnd" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testModality">Modalidad *</label>
+                        <select id="testModality" required>
+                            <option value="">Seleccionar modalidad</option>
+                            <option value="presencial">Presencial</option>
+                            <option value="virtual">Virtual</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testDuration">Duración de Sesión</label>
+                        <select id="testDuration">
+                            <option value="30">30 minutos</option>
+                            <option value="45" selected>45 minutos</option>
+                            <option value="60">60 minutos</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="closeTestModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="testSaveSchedule()" id="saveBtn">Guardar Disponibilidad</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createTestAvailability() {
+            const testData = {
+                id: 'avail_test_' + Date.now(),
+                date: '2025-10-02', // Fecha específica para probar
+                subject: 'quimica',
+                startTime: '06:00',
+                endTime: '10:00',
+                modality: 'presencial',
+                duration: 45,
+                createdAt: new Date().toISOString()
+            };
+            
+            console.log('Creando disponibilidad:', testData);
+            
+            // Guardar en localStorage
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            tutorAvailability.push(testData);
+            localStorage.setItem('tutorAvailability', JSON.stringify(tutorAvailability));
+            
+            alert('Disponibilidad creada para 02/10/2025');
+            loadAvailabilityList();
+        }
+        
+        function loadAvailabilityList() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const container = document.getElementById('availabilityList');
+            
+            if (tutorAvailability.length === 0) {
+                container.innerHTML = '<p>No hay disponibilidades guardadas</p>';
+                return;
+            }
+            
+            container.innerHTML = tutorAvailability.map(item => `
+                <div class="availability-item" data-id="${item.id}">
+                    <div class="availability-info">
+                        <div class="availability-main">
+                            <span class="date">${formatDate(item.date)}</span>
+                            <span class="time">${formatTime(item.startTime)} - ${formatTime(item.endTime)}</span>
+                        </div>
+                        <div class="availability-details">
+                            <span class="subject">${getSubjectName(item.subject)}</span>
+                            <span class="modality ${item.modality}">${getModalityName(item.modality)}</span>
+                            <span class="duration">${item.duration} min</span>
+                        </div>
+                    </div>
+                    <div class="availability-actions">
+                        <button class="btn btn-warning" onclick="testEditAvailability('${item.id}')">Editar</button>
+                        <button class="btn btn-danger" onclick="deleteTestAvailability('${item.id}')">Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function testEditAvailability(availabilityId) {
+            console.log('Probando edición de:', availabilityId);
+            
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const availability = tutorAvailability.find(av => av.id === availabilityId);
+            
+            if (availability) {
+                console.log('Disponibilidad encontrada:', availability);
+                
+                // Abrir modal
+                const modal = document.getElementById('testModal');
+                modal.style.display = 'flex';
+                
+                // Poblar formulario usando la función corregida
+                populateScheduleForm(availability);
+                
+                // Cambiar el botón para indicar edición
+                const saveBtn = document.getElementById('saveBtn');
+                saveBtn.textContent = 'Actualizar Disponibilidad';
+                saveBtn.setAttribute('data-edit-id', availability.id);
+            } else {
+                alert('Disponibilidad no encontrada');
+            }
+        }
+        
+        function populateScheduleForm(availability) {
+            console.log('Poblando formulario con:', availability);
+            
+            try {
+                const dateInput = document.getElementById('testDate');
+                const subjectSelect = document.getElementById('testSubject');
+                const startInput = document.getElementById('testStart');
+                const endInput = document.getElementById('testEnd');
+                const modalitySelect = document.getElementById('testModality');
+                const durationSelect = document.getElementById('testDuration');
+                
+                if (!dateInput || !subjectSelect || !startInput || !endInput || !modalitySelect || !durationSelect) {
+                    console.error('Elementos del formulario no encontrados');
+                    return;
+                }
+                
+                // CORRECCIÓN APLICADA: Manejar fechas correctamente
+                if (availability.date) {
+                    let dateValue = availability.date;
+                    
+                    // Si la fecha viene como string en formato YYYY-MM-DD, usarla directamente
+                    if (typeof dateValue === 'string' && dateValue.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        dateInput.value = dateValue;
+                        console.log('Fecha asignada directamente:', dateValue);
+                    } else {
+                        // Si viene como objeto Date o string con hora, extraer solo la fecha
+                        const date = new Date(dateValue);
+                        if (!isNaN(date.getTime())) {
+                            // Usar método manual para evitar problemas de zona horaria
+                            const [year, month, day] = dateValue.split('-');
+                            const localDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                            const isoDate = localDate.toISOString().split('T')[0];
+                            dateInput.value = isoDate;
+                            console.log('Fecha convertida manualmente:', dateValue, '->', isoDate);
+                        } else {
+                            console.error('Fecha inválida:', dateValue);
+                            dateInput.value = '';
+                        }
+                    }
+                    
+                    console.log('Fecha final en input:', dateInput.value);
+                }
+                
+                // Asignar otros valores
+                subjectSelect.value = availability.subject || '';
+                startInput.value = availability.startTime || '';
+                endInput.value = availability.endTime || '';
+                modalitySelect.value = availability.modality || '';
+                durationSelect.value = availability.duration || '45';
+                
+                console.log('Formulario poblado exitosamente');
+            } catch (error) {
+                console.error('Error poblando formulario:', error);
+            }
+        }
+        
+        function testSaveSchedule() {
+            const saveBtn = document.getElementById('saveBtn');
+            const editId = saveBtn.getAttribute('data-edit-id');
+            
+            if (editId) {
+                // Obtener valores actuales del formulario
+                const currentDate = document.getElementById('testDate').value;
+                const currentSubject = document.getElementById('testSubject').value;
+                const currentStart = document.getElementById('testStart').value;
+                const currentEnd = document.getElementById('testEnd').value;
+                const currentModality = document.getElementById('testModality').value;
+                const currentDuration = parseInt(document.getElementById('testDuration').value);
+                
+                console.log('Guardando con fecha:', currentDate);
+                alert(`Guardando con fecha: ${currentDate}`);
+                
+                closeTestModal();
+            }
+        }
+        
+        function deleteTestAvailability(availabilityId) {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const filteredAvailability = tutorAvailability.filter(av => av.id !== availabilityId);
+            localStorage.setItem('tutorAvailability', JSON.stringify(filteredAvailability));
+            loadAvailabilityList();
+        }
+        
+        function closeTestModal() {
+            const modal = document.getElementById('testModal');
+            modal.style.display = 'none';
+            
+            // Resetear el botón
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.textContent = 'Guardar Disponibilidad';
+            saveBtn.removeAttribute('data-edit-id');
+        }
+        
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'p. m.' : 'a. m.';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            const dayName = days[date.getDay()];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${dayName} ${day}/${month}/${year}`;
+        }
+
+        function getSubjectName(subjectValue) {
+            const subjects = {
+                'quimica': 'Química'
+            };
+            return subjects[subjectValue] || subjectValue;
+        }
+
+        function getModalityName(modality) {
+            const modalities = {
+                'presencial': 'Presencial',
+                'virtual': 'Virtual'
+            };
+            return modalities[modality] || modality;
+        }
+        
+        // Cargar lista al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAvailabilityList();
+        });
+    </script>
+</body>
+</html>

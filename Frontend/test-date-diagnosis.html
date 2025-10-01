@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico de Fechas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Diagnóstico de Problema de Fechas</h1>
+        
+        <div class="test-section">
+            <h3>Probar con Fecha Específica</h3>
+            <div class="form-group">
+                <label for="testDate">Fecha:</label>
+                <input type="date" id="testDate" value="2025-10-02">
+            </div>
+            <button class="btn btn-primary" onclick="testDateConversion()">Probar Conversión</button>
+            <button class="btn btn-success" onclick="createTestAvailability()">Crear Disponibilidad de Prueba</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Disponibilidades Guardadas</h3>
+            <div id="availabilityList">
+                <!-- Se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Información de Debug</h3>
+            <div id="debugInfo" class="debug-info">
+                <!-- Información de debug -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function testDateConversion() {
+            const dateInput = document.getElementById('testDate');
+            const dateValue = dateInput.value;
+            
+            updateDebugInfo('=== PRUEBA DE CONVERSIÓN DE FECHA ===');
+            updateDebugInfo(`Fecha original del input: ${dateValue}`);
+            
+            // Probar diferentes métodos de conversión
+            const date1 = new Date(dateValue);
+            updateDebugInfo(`new Date(dateValue): ${date1}`);
+            updateDebugInfo(`date1.toISOString(): ${date1.toISOString()}`);
+            updateDebugInfo(`date1.toISOString().split('T')[0]: ${date1.toISOString().split('T')[0]}`);
+            
+            // Probar con zona horaria local
+            const date2 = new Date(dateValue + 'T00:00:00');
+            updateDebugInfo(`new Date(dateValue + 'T00:00:00'): ${date2}`);
+            updateDebugInfo(`date2.toISOString(): ${date2.toISOString()}`);
+            updateDebugInfo(`date2.toISOString().split('T')[0]: ${date2.toISOString().split('T')[0]}`);
+            
+            // Probar con UTC
+            const date3 = new Date(dateValue + 'T00:00:00Z');
+            updateDebugInfo(`new Date(dateValue + 'T00:00:00Z'): ${date3}`);
+            updateDebugInfo(`date3.toISOString(): ${date3.toISOString()}`);
+            updateDebugInfo(`date3.toISOString().split('T')[0]: ${date3.toISOString().split('T')[0]}`);
+            
+            // Probar método manual
+            const [year, month, day] = dateValue.split('-');
+            const date4 = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            updateDebugInfo(`Método manual: new Date(${year}, ${month-1}, ${day})`);
+            updateDebugInfo(`date4: ${date4}`);
+            updateDebugInfo(`date4.toISOString(): ${date4.toISOString()}`);
+            updateDebugInfo(`date4.toISOString().split('T')[0]: ${date4.toISOString().split('T')[0]}`);
+            
+            updateDebugInfo('=== FIN DE PRUEBA ===');
+        }
+        
+        function createTestAvailability() {
+            const dateValue = document.getElementById('testDate').value;
+            
+            const testData = {
+                id: 'avail_test_' + Date.now(),
+                date: dateValue,
+                subject: 'quimica',
+                startTime: '06:00',
+                endTime: '10:00',
+                modality: 'presencial',
+                duration: 45,
+                createdAt: new Date().toISOString()
+            };
+            
+            updateDebugInfo('=== CREANDO DISPONIBILIDAD ===');
+            updateDebugInfo(`Datos a guardar: ${JSON.stringify(testData, null, 2)}`);
+            
+            // Guardar en localStorage
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            tutorAvailability.push(testData);
+            localStorage.setItem('tutorAvailability', JSON.stringify(tutorAvailability));
+            
+            updateDebugInfo('Disponibilidad guardada exitosamente');
+            loadAvailabilityList();
+        }
+        
+        function loadAvailabilityList() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const container = document.getElementById('availabilityList');
+            
+            if (tutorAvailability.length === 0) {
+                container.innerHTML = '<p>No hay disponibilidades guardadas</p>';
+                return;
+            }
+            
+            container.innerHTML = tutorAvailability.map(item => `
+                <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                    <strong>ID:</strong> ${item.id}<br>
+                    <strong>Fecha guardada:</strong> ${item.date}<br>
+                    <strong>Fecha formateada:</strong> ${formatDate(item.date)}<br>
+                    <strong>Fecha como Date:</strong> ${new Date(item.date)}<br>
+                    <strong>Fecha ISO:</strong> ${new Date(item.date).toISOString()}<br>
+                    <strong>Materia:</strong> ${item.subject}<br>
+                    <strong>Horario:</strong> ${item.startTime} - ${item.endTime}<br>
+                    <strong>Modalidad:</strong> ${item.modality}<br>
+                    <button class="btn btn-warning" onclick="testEditAvailability('${item.id}')">Probar Edición</button>
+                    <button class="btn btn-danger" onclick="deleteTestAvailability('${item.id}')">Eliminar</button>
+                </div>
+            `).join('');
+        }
+        
+        function testEditAvailability(availabilityId) {
+            updateDebugInfo('=== PROBANDO EDICIÓN ===');
+            
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const availability = tutorAvailability.find(av => av.id === availabilityId);
+            
+            if (availability) {
+                updateDebugInfo(`Disponibilidad encontrada: ${JSON.stringify(availability, null, 2)}`);
+                
+                // Simular la función populateScheduleForm
+                const dateInput = document.getElementById('testDate');
+                if (dateInput) {
+                    updateDebugInfo(`Fecha original: ${availability.date}`);
+                    
+                    // Probar diferentes métodos de asignación
+                    dateInput.value = availability.date;
+                    updateDebugInfo(`Valor asignado al input: ${dateInput.value}`);
+                    
+                    // Probar conversión como en el código actual
+                    const date = new Date(availability.date);
+                    const isoDate = date.toISOString().split('T')[0];
+                    updateDebugInfo(`Conversión actual: ${availability.date} -> ${isoDate}`);
+                    
+                    // Probar método mejorado
+                    const [year, month, day] = availability.date.split('-');
+                    const manualDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    const manualIsoDate = manualDate.toISOString().split('T')[0];
+                    updateDebugInfo(`Método manual: ${availability.date} -> ${manualIsoDate}`);
+                }
+            } else {
+                updateDebugInfo('Disponibilidad no encontrada');
+            }
+        }
+        
+        function deleteTestAvailability(availabilityId) {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const filteredAvailability = tutorAvailability.filter(av => av.id !== availabilityId);
+            localStorage.setItem('tutorAvailability', JSON.stringify(filteredAvailability));
+            updateDebugInfo('Disponibilidad eliminada');
+            loadAvailabilityList();
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            const dayName = days[date.getDay()];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${dayName} ${day}/${month}/${year}`;
+        }
+        
+        function updateDebugInfo(message) {
+            const debugInfo = document.getElementById('debugInfo');
+            if (debugInfo) {
+                const timestamp = new Date().toLocaleTimeString();
+                debugInfo.textContent += `[${timestamp}] ${message}\n`;
+            }
+        }
+        
+        // Cargar lista al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDebugInfo('Página de diagnóstico cargada');
+            loadAvailabilityList();
+        });
+    </script>
+</body>
+</html>

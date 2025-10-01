@@ -1,0 +1,137 @@
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  font-family: 'Segoe UI', sans-serif; 
+}
+
+body { 
+  display: flex; 
+  height: 100vh; 
+}
+
+.panel-izquierdo {
+  flex: 1;
+  background: #800020; /* Rojo vino */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.panel-izquierdo img {
+  max-width: 260px;
+  opacity: 0.95;
+}
+
+.panel-derecho {
+  flex: 1;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+.form-container h2 {
+  margin-bottom: 20px;
+  font-size: 1.6rem;
+  color: #800020; /* mismo color que el login */
+  text-align: center;
+}
+
+.input-group {
+  margin-bottom: 14px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  background: #800020; /* rojo vino igual que login */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #5a0016;
+}
+
+.login-link {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.login-link a {
+  color: #800020;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.terms {
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.terms input[type="checkbox"] {
+  width: auto;
+}
+
+.terms label {
+  font-size: 14px;
+  color: #666;
+}
+.input-group { position: relative; }
+.input-group.has-eye input { padding-right: 44px; }
+
+.toggle-eye{
+  position:absolute; right:12px; top:50%;
+  transform: translateY(-50%);
+  width:28px; height:28px;
+  border:0; background:transparent; cursor:pointer;
+  z-index:2; padding:0; margin:0; line-height:1; opacity:.85;
+}
+.toggle-eye:hover{ opacity:1; }
+
+.toggle-eye::before{
+  content:""; display:block; width:100%; height:100%; background:#5a5a5a;
+  -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>') no-repeat center/22px 22px;
+          mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>') no-repeat center/22px 22px;
+}
+.toggle-eye.revealed::before{
+  -webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.86 21.86 0 0 1 5.06-6.94"/><path d="M1 1l22 22"/><path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/></svg>') no-repeat center/22px 22px;
+          mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.86 21.86 0 0 1 5.06-6.94"/><path d="M1 1l22 22"/><path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/></svg>') no-repeat center/22px 22px;
+}
+
+
+
+

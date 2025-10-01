@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Gestión de Disponibilidades</title>
+    <link rel="stylesheet" href="Interfaces/tutores/tutores.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 2rem;
+            background: #f5f7fa;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        .test-title {
+            text-align: center;
+            color: #7f0222;
+            margin-bottom: 2rem;
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #d19800;
+        }
+        .test-section h3 {
+            color: #7f0222;
+            margin-bottom: 1rem;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">Test - Gestión de Disponibilidades del Tutor</h1>
+        
+        <div class="test-section">
+            <h3>Controles de Prueba</h3>
+            <div class="test-buttons">
+                <button class="btn btn-primary" onclick="openScheduleModal()">
+                    <i class="fas fa-calendar-plus"></i> Configurar Disponibilidad
+                </button>
+                <button class="btn btn-outline" onclick="loadCurrentAvailability()">
+                    <i class="fas fa-refresh"></i> Recargar Disponibilidades
+                </button>
+                <button class="btn btn-secondary" onclick="clearAllAvailability()">
+                    <i class="fas fa-trash"></i> Limpiar Todo
+                </button>
+                <button class="btn btn-warning" onclick="cleanOldAvailabilityData()">
+                    <i class="fas fa-broom"></i> Limpiar Datos Antiguos
+                </button>
+                <button class="btn btn-info" onclick="forceRefresh()">
+                    <i class="fas fa-sync"></i> Forzar Actualización
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Disponibilidades Actuales</h3>
+            <div class="availability-list">
+                <!-- Las disponibilidades se cargarán aquí -->
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Información de Debug</h3>
+            <div id="debug-info">
+                <p>Disponibilidades en localStorage: <span id="localStorage-count">0</span></p>
+                <p>Última acción: <span id="last-action">Ninguna</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Gestión de Horarios -->
+    <div class="schedule-modal" id="scheduleModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-plus"></i> Configurar Disponibilidad</h3>
+                <span class="close" onclick="closeScheduleModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="simpleScheduleForm">
+                    <div class="form-group">
+                        <label for="scheduleDate">Fecha *</label>
+                        <input type="date" id="scheduleDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleSubject">Materia *</label>
+                        <select id="scheduleSubject" required>
+                            <option value="">Seleccionar materia</option>
+                            <option value="matematicas">Matemáticas</option>
+                            <option value="fisica">Física</option>
+                            <option value="quimica">Química</option>
+                            <option value="biologia">Biología</option>
+                            <option value="espanol">Español</option>
+                            <option value="historia">Historia</option>
+                            <option value="geografia">Geografía</option>
+                            <option value="ingles">Inglés</option>
+                            <option value="filosofia">Filosofía</option>
+                            <option value="literatura">Literatura</option>
+                            <option value="programacion">Programación</option>
+                            <option value="estadistica">Estadística</option>
+                            <option value="calculo">Cálculo</option>
+                            <option value="algebra">Álgebra</option>
+                            <option value="otra">Otra</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="scheduleStart">Hora de Inicio *</label>
+                            <input type="time" id="scheduleStart" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="scheduleEnd">Hora de Fin *</label>
+                            <input type="time" id="scheduleEnd" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleModality">Modalidad *</label>
+                        <select id="scheduleModality" required>
+                            <option value="">Seleccionar modalidad</option>
+                            <option value="presencial">Presencial</option>
+                            <option value="virtual">Virtual</option>
+                            <option value="both">Ambas</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleDuration">Duración de Sesión</label>
+                        <select id="scheduleDuration">
+                            <option value="30">30 minutos</option>
+                            <option value="45" selected>45 minutos</option>
+                            <option value="60">60 minutos</option>
+                            <option value="90">90 minutos</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeScheduleModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveSimpleSchedule()">Guardar Disponibilidad</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funciones necesarias para el test
+        function getDayNameFromDate(dateString) {
+            const date = new Date(dateString);
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            return days[date.getDay()];
+        }
+
+        function getSubjectName(subjectValue) {
+            const subjects = {
+                'matematicas': 'Matemáticas',
+                'fisica': 'Física',
+                'quimica': 'Química',
+                'biologia': 'Biología',
+                'espanol': 'Español',
+                'historia': 'Historia',
+                'geografia': 'Geografía',
+                'ingles': 'Inglés',
+                'filosofia': 'Filosofía',
+                'literatura': 'Literatura',
+                'programacion': 'Programación',
+                'estadistica': 'Estadística',
+                'calculo': 'Cálculo',
+                'algebra': 'Álgebra',
+                'otra': 'Otra'
+            };
+            return subjects[subjectValue] || subjectValue;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            const dayName = days[date.getDay()];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${dayName} ${day}/${month}/${year}`;
+        }
+
+        function validateDuplicateAvailability(newAvailability) {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            return tutorAvailability.some(existing => {
+                // Solo validar si el registro existente tiene los campos necesarios
+                if (!existing.date || !existing.subject) {
+                    return false; // No considerar registros antiguos sin fecha/materia
+                }
+                
+                return existing.date === newAvailability.date &&
+                       existing.subject === newAvailability.subject &&
+                       existing.startTime === newAvailability.startTime &&
+                       existing.endTime === newAvailability.endTime &&
+                       existing.modality === newAvailability.modality;
+            });
+        }
+
+        function cleanOldAvailabilityData() {
+            // Limpiar datos antiguos que no tengan fecha o materia
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const cleanedAvailability = tutorAvailability.filter(item => item.date && item.subject);
+            
+            if (cleanedAvailability.length !== tutorAvailability.length) {
+                localStorage.setItem('tutorAvailability', JSON.stringify(cleanedAvailability));
+                console.log(`Limpieza completada: ${tutorAvailability.length - cleanedAvailability.length} registros antiguos eliminados`);
+                loadCurrentAvailability();
+            }
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'p. m.' : 'a. m.';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        function getModalityName(modality) {
+            const modalities = {
+                'presencial': 'Presencial',
+                'virtual': 'Virtual',
+                'both': 'Presencial/Virtual'
+            };
+            return modalities[modality] || modality;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `status-bar`;
+            notification.innerHTML = `
+                <div class="status-icon">
+                    <i class="fas fa-${getNotificationIcon(type)}"></i>
+                </div>
+                <div class="status-text">${message}</div>
+                <button class="status-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
+            return icons[type] || 'info-circle';
+        }
+
+        function openScheduleModal() {
+            const modal = document.getElementById('scheduleModal');
+            modal.style.display = 'flex';
+            
+            const form = document.getElementById('simpleScheduleForm');
+            if (form) {
+                form.reset();
+            }
+            
+            // Configurar fecha mínima (hoy)
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('scheduleDate');
+            if (dateInput) {
+                dateInput.min = today;
+            }
+            
+            const saveBtn = document.querySelector('[onclick="saveSimpleSchedule()"]');
+            if (saveBtn) {
+                saveBtn.textContent = 'Guardar Disponibilidad';
+                saveBtn.removeAttribute('data-edit-id');
+            }
+            
+            updateLastAction('Modal abierto');
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'none';
+            updateLastAction('Modal cerrado');
+        }
+
+        function saveSimpleSchedule() {
+            const date = document.getElementById('scheduleDate').value;
+            const subject = document.getElementById('scheduleSubject').value;
+            const start = document.getElementById('scheduleStart').value;
+            const end = document.getElementById('scheduleEnd').value;
+            const modality = document.getElementById('scheduleModality').value;
+            const duration = document.getElementById('scheduleDuration').value;
+            
+            if (!date || !subject || !start || !end || !modality) {
+                showNotification('Por favor completa todos los campos requeridos', 'error');
+                return;
+            }
+            
+            if (start >= end) {
+                showNotification('La hora de fin debe ser mayor que la hora de inicio', 'error');
+                return;
+            }
+            
+            // Validar que la fecha no sea en el pasado
+            const selectedDate = new Date(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                showNotification('No puedes programar disponibilidad para fechas pasadas', 'error');
+                return;
+            }
+            
+            const saveBtn = document.querySelector('[onclick="saveSimpleSchedule()"]');
+            const editId = saveBtn.getAttribute('data-edit-id');
+            
+            const availability = {
+                id: editId || `avail_${Date.now()}`,
+                date: date,
+                day: getDayNameFromDate(date),
+                subject: subject,
+                startTime: start,
+                endTime: end,
+                modality: modality,
+                duration: parseInt(duration),
+                createdAt: editId ? undefined : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Validar duplicados (solo para nuevas disponibilidades)
+            if (!editId) {
+                if (validateDuplicateAvailability(availability)) {
+                    showNotification('Ya tienes una disponibilidad configurada para esta fecha, materia y horario', 'error');
+                    return;
+                }
+            }
+            
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (editId) {
+                const index = tutorAvailability.findIndex(av => av.id === editId);
+                if (index !== -1) {
+                    tutorAvailability[index] = availability;
+                }
+            } else {
+                tutorAvailability.push(availability);
+            }
+            
+            localStorage.setItem('tutorAvailability', JSON.stringify(tutorAvailability));
+            
+            showNotification(`Disponibilidad ${editId ? 'actualizada' : 'guardada'} exitosamente`, 'success');
+            closeScheduleModal();
+            loadCurrentAvailability();
+            updateLastAction(`Disponibilidad ${editId ? 'actualizada' : 'guardada'}`);
+        }
+
+        function loadCurrentAvailability() {
+            const availabilityList = document.querySelector('.availability-list');
+            if (!availabilityList) {
+                console.log('No se encontró el elemento .availability-list');
+                return;
+            }
+            
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            console.log('Cargando desde localStorage:', tutorAvailability.length, 'elementos');
+            
+            // Filtrar solo registros que tengan fecha y materia (datos nuevos)
+            const validAvailability = tutorAvailability.filter(item => item.date && item.subject);
+            console.log('Mostrando disponibilidades:', validAvailability.length, 'de', tutorAvailability.length, 'totales');
+            
+            if (validAvailability.length === 0) {
+                console.log('No hay disponibilidades válidas, mostrando mensaje vacío');
+                availabilityList.innerHTML = `
+                    <div class="no-availability-message">
+                        <div class="no-availability-icon">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <h4>No hay disponibilidades configuradas</h4>
+                        <p>Configura tu disponibilidad para que los estudiantes puedan solicitar sesiones.</p>
+                        <button class="btn btn-primary" onclick="openScheduleModal()">
+                            <i class="fas fa-calendar-plus"></i> Configurar Disponibilidad
+                        </button>
+                    </div>
+                `;
+            } else {
+                console.log('Generando HTML para', validAvailability.length, 'disponibilidades');
+                availabilityList.innerHTML = validAvailability.map(item => {
+                    // Asegurar que el ID existe
+                    const itemId = item.id || `avail_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    console.log('Generando elemento para ID:', itemId);
+                    
+                    return `
+                    <div class="availability-item" data-id="${itemId}">
+                        <div class="availability-info">
+                            <div class="availability-main">
+                                <span class="date">${formatDate(item.date) || ''}</span>
+                                <span class="time">${formatTime(item.startTime) || ''} - ${formatTime(item.endTime) || ''}</span>
+                            </div>
+                            <div class="availability-details">
+                                <span class="subject">${getSubjectName(item.subject) || ''}</span>
+                                <span class="modality ${item.modality || ''}">${getModalityName(item.modality) || ''}</span>
+                                <span class="duration">${item.duration || 45} min</span>
+                            </div>
+                        </div>
+                        <div class="availability-actions">
+                            <button class="btn btn-outline" onclick="editAvailability('${itemId}')" data-edit-id="${itemId}">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteAvailability('${itemId}')" data-delete-id="${itemId}">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </button>
+                        </div>
+                    </div>
+                `;
+                }).join('');
+                console.log('HTML generado exitosamente');
+            }
+            
+            updateDebugInfo();
+        }
+
+        function editAvailability(availabilityId) {
+            console.log('Intentando editar disponibilidad:', availabilityId);
+            
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            console.log('Buscando en localStorage:', tutorAvailability.length, 'elementos');
+            console.log('IDs disponibles:', tutorAvailability.map(av => av.id));
+            
+            const availability = tutorAvailability.find(av => av.id === availabilityId);
+            
+            if (availability) {
+                console.log('Disponibilidad encontrada:', availability);
+                openScheduleModal();
+                populateScheduleForm(availability);
+                updateLastAction(`Editando disponibilidad: ${availabilityId}`);
+            } else {
+                console.error('Disponibilidad no encontrada con ID:', availabilityId);
+                showNotification('Disponibilidad no encontrada', 'error');
+            }
+        }
+
+        function populateScheduleForm(availability) {
+            console.log('Poblando formulario con:', availability);
+            
+            try {
+                // Verificar que todos los elementos existan antes de asignar valores
+                const dateInput = document.getElementById('scheduleDate');
+                const subjectSelect = document.getElementById('scheduleSubject');
+                const startInput = document.getElementById('scheduleStart');
+                const endInput = document.getElementById('scheduleEnd');
+                const modalitySelect = document.getElementById('scheduleModality');
+                const durationSelect = document.getElementById('scheduleDuration');
+                
+                if (!dateInput || !subjectSelect || !startInput || !endInput || !modalitySelect || !durationSelect) {
+                    console.error('Elementos del formulario no encontrados');
+                    showNotification('Error: Formulario no disponible', 'error');
+                    return;
+                }
+                
+                // Asignar valores
+                dateInput.value = availability.date || '';
+                subjectSelect.value = availability.subject || '';
+                startInput.value = availability.startTime || '';
+                endInput.value = availability.endTime || '';
+                modalitySelect.value = availability.modality || '';
+                durationSelect.value = availability.duration || '45';
+                
+                // Cambiar el botón para indicar que es una edición
+                const saveBtn = document.querySelector('[onclick="saveSimpleSchedule()"]');
+                if (saveBtn) {
+                    saveBtn.textContent = 'Actualizar Disponibilidad';
+                    saveBtn.setAttribute('data-edit-id', availability.id);
+                    console.log('Botón actualizado para edición:', availability.id);
+                } else {
+                    console.error('Botón de guardar no encontrado');
+                }
+                
+                console.log('Formulario poblado exitosamente');
+            } catch (error) {
+                console.error('Error poblando formulario:', error);
+                showNotification('Error al cargar los datos en el formulario', 'error');
+            }
+        }
+
+        function deleteAvailability(availabilityId) {
+            console.log('Intentando eliminar disponibilidad:', availabilityId);
+            
+            if (confirm('¿Estás seguro de que quieres eliminar esta disponibilidad?')) {
+                console.log('Confirmación recibida, procediendo con eliminación');
+                
+                try {
+                    const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+                    console.log('Disponibilidades antes de eliminar:', tutorAvailability.length);
+                    console.log('IDs disponibles:', tutorAvailability.map(av => av.id));
+                    
+                    const filteredAvailability = tutorAvailability.filter(av => av.id !== availabilityId);
+                    console.log('Disponibilidades después de eliminar:', filteredAvailability.length);
+                    
+                    if (filteredAvailability.length === tutorAvailability.length) {
+                        console.error('No se encontró la disponibilidad para eliminar');
+                        showNotification('No se encontró la disponibilidad para eliminar', 'error');
+                        return;
+                    }
+                    
+                    localStorage.setItem('tutorAvailability', JSON.stringify(filteredAvailability));
+                    
+                    showNotification('Disponibilidad eliminada exitosamente', 'success');
+                    
+                    // Recargar las disponibilidades actuales con un pequeño delay
+                    setTimeout(() => {
+                        loadCurrentAvailability();
+                    }, 100);
+                    
+                    updateLastAction(`Disponibilidad eliminada: ${availabilityId}`);
+                    
+                } catch (error) {
+                    console.error('Error en proceso de eliminación:', error);
+                    showNotification('Error al eliminar la disponibilidad', 'error');
+                }
+            } else {
+                console.log('Eliminación cancelada por el usuario');
+            }
+        }
+
+        function clearAllAvailability() {
+            if (confirm('¿Estás seguro de que quieres eliminar todas las disponibilidades?')) {
+                localStorage.removeItem('tutorAvailability');
+                showNotification('Todas las disponibilidades han sido eliminadas', 'success');
+                loadCurrentAvailability();
+                updateLastAction('Todas las disponibilidades eliminadas');
+            }
+        }
+
+        function updateDebugInfo() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            document.getElementById('localStorage-count').textContent = tutorAvailability.length;
+        }
+
+        function updateLastAction(action) {
+            document.getElementById('last-action').textContent = action;
+        }
+
+        function forceRefresh() {
+            console.log('Forzando actualización...');
+            const availabilityList = document.querySelector('.availability-list');
+            if (availabilityList) {
+                availabilityList.innerHTML = '<div style="text-align: center; padding: 2rem;">Actualizando...</div>';
+                setTimeout(() => {
+                    loadCurrentAvailability();
+                    updateLastAction('Actualización forzada');
+                }, 500);
+            }
+        }
+
+        // Inicializar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Limpiar datos antiguos después de un breve delay
+            setTimeout(() => {
+                cleanOldAvailabilityData();
+            }, 1000);
+            
+            loadCurrentAvailability();
+            updateLastAction('Página cargada');
+        });
+    </script>
+</body>
+</html>
