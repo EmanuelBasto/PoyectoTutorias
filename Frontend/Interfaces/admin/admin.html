@@ -7,6 +7,10 @@
     <link rel="icon" type="image/png" href="/ProyectosMM-main-main/ProyectosMM-main/Interfaces/5766243.png">
     <link rel="stylesheet" href="admin.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Librerías para generación de reportes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -61,12 +65,6 @@
                         <a href="#" class="nav-link" onclick="loadSection('usuarios')">
                             <i class="fas fa-users"></i>
                             <span>Gestión de Usuarios</span>
-                        </a>
-                    </li>
-                    <li class="nav-item" data-section="parametros">
-                        <a href="#" class="nav-link" onclick="loadSection('parametros')">
-                            <i class="fas fa-sliders-h"></i>
-                            <span>Parámetros del Sistema</span>
                         </a>
                     </li>
                     <li class="nav-item" data-section="asistencia">
@@ -413,55 +411,6 @@
         </div>
     </template>
 
-    <template id="parametrosTemplate">
-        <div class="content-header">
-            <h2>Parámetros del Sistema</h2>
-            <p>Configura los parámetros generales del sistema de tutorías</p>
-        </div>
-
-        <div class="parameters-container">
-            <div class="parameter-section">
-                <h3><i class="fas fa-clock"></i> Configuración de Sesiones</h3>
-                <form id="sessionParametersForm">
-                    <div class="form-group">
-                        <label>Duración Estándar de Sesión (minutos)</label>
-                        <input type="number" name="duracionEstandar" min="15" max="180" step="15">
-                    </div>
-                    <div class="form-group">
-                        <label>Ventana de Cancelación (horas antes)</label>
-                        <input type="number" name="ventanaCancelacion" min="1" max="24">
-                    </div>
-                    <div class="form-group">
-                        <label>Límite de Sesiones por Usuario (por semana)</label>
-                        <input type="number" name="limiteSesiones" min="1" max="20">
-                    </div>
-                </form>
-            </div>
-
-            <div class="parameter-section">
-                <h3><i class="fas fa-bell"></i> Canales de Notificación</h3>
-                <form id="notificationParametersForm">
-                    <div class="form-group">
-                        <label>Canales de Notificación</label>
-                        <div class="checkbox-group">
-                            <label><input type="checkbox" name="email" value="email"> Email</label>
-                            <label><input type="checkbox" name="sms" value="sms"> SMS</label>
-                            <label><input type="checkbox" name="push" value="push"> Notificaciones Push</label>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <div class="form-actions">
-                <button class="btn btn-primary" onclick="saveAllParameters()">
-                    <i class="fas fa-save"></i> Guardar Todos los Parámetros
-                </button>
-                <button class="btn btn-secondary" onclick="resetParameters()">
-                    <i class="fas fa-undo"></i> Restaurar Valores por Defecto
-                </button>
-            </div>
-        </div>
-    </template>
 
     <template id="asistenciaTemplate">
         <div class="content-header">
@@ -470,6 +419,9 @@
         </div>
 
         <div class="section-controls">
+            <button class="btn btn-primary" onclick="loadSesiones()">
+                <i class="fas fa-sync-alt"></i> Actualizar Sesiones
+            </button>
             <div class="filter-group">
                 <label>Filtrar por fecha:</label>
                 <input type="date" id="fechaFilter" onchange="filterSesionesByDate()">
@@ -480,13 +432,16 @@
             </div>
         </div>
 
-        <!-- Botón temporal de debug -->
+        <!-- Botones de control -->
         <div style="margin-bottom: 20px;">
             <button class="btn btn-warning" onclick="clearAuthToken(); loadSesiones();" style="margin-right: 10px;">
                 <i class="fas fa-sync-alt"></i> Limpiar Token y Recargar
             </button>
-            <button class="btn btn-info" onclick="loadSesiones();">
+            <button class="btn btn-info" onclick="loadSesiones();" style="margin-right: 10px;">
                 <i class="fas fa-refresh"></i> Recargar Sesiones
+            </button>
+            <button class="btn btn-danger" onclick="clearSampleData();">
+                <i class="fas fa-trash"></i> Limpiar Datos de Ejemplo
             </button>
         </div>
 
@@ -603,13 +558,21 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Período</label>
-                            <select id="reportPeriod">
+                            <label>Tipo de Período</label>
+                            <select id="reportPeriodType" onchange="togglePeriodSelectors()">
                                 <option value="hoy">Hoy</option>
                                 <option value="semana">Esta Semana</option>
-                                <option value="mes">Este Mes</option>
-                                <option value="año">Este Año</option>
+                                <option value="mes">Mes Específico</option>
+                                <option value="año">Año Específico</option>
                             </select>
+                        </div>
+                        <div class="form-group" id="monthSelector" style="display: none;">
+                            <label>Seleccionar Mes</label>
+                            <input type="month" id="reportMonth" value="">
+                        </div>
+                        <div class="form-group" id="yearSelector" style="display: none;">
+                            <label>Seleccionar Año</label>
+                            <input type="date" id="reportYear" value="2025-01-01" placeholder="Selecciona el año">
                         </div>
                         <div class="form-group">
                             <label>Formato</label>
@@ -627,8 +590,14 @@
                     <button class="btn btn-primary" onclick="generateReport()">
                         <i class="fas fa-chart-line"></i> Generar Reporte
                     </button>
-                    <button class="btn btn-download" onclick="downloadBlankReport()">
-                        <i class="fas fa-file-download"></i> Descargar Plantilla
+                    <button class="btn btn-danger" onclick="downloadPDF()" disabled id="pdfBtn">
+                        <i class="fas fa-file-pdf"></i> Descargar PDF
+                    </button>
+                    <button class="btn btn-success" onclick="downloadExcel()" disabled id="excelBtn">
+                        <i class="fas fa-file-excel"></i> Descargar Excel
+                    </button>
+                    <button class="btn btn-info" onclick="previewReport()" disabled id="previewBtn">
+                        <i class="fas fa-eye"></i> Vista Previa
                     </button>
                 </div>
             </div>
@@ -671,5 +640,775 @@
     <script src="/Interfaces/backend-config.js"></script>
     <script src="/Interfaces/integration-connections.js"></script>
     <script src="admin.js"></script>
+    
+    <!-- Script para funcionalidad de reportes PDF y Excel -->
+    <script>
+        // Variables globales para almacenar datos del reporte
+        let currentReportData = null;
+        let currentReportType = null;
+        let currentReportPeriod = null;
+
+        // Función para generar reporte con datos del sistema
+        function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            const periodType = document.getElementById('reportPeriodType').value;
+            
+            // Obtener el período específico según el tipo seleccionado
+            let reportPeriod = periodType;
+            if (periodType === 'mes') {
+                const selectedMonth = document.getElementById('reportMonth').value;
+                reportPeriod = `mes_${selectedMonth}`;
+            } else if (periodType === 'año') {
+                const selectedDate = document.getElementById('reportYear').value;
+                const selectedYear = selectedDate.split('-')[0]; // Extraer solo el año
+                reportPeriod = `año_${selectedYear}`;
+            }
+            
+            currentReportType = reportType;
+            currentReportPeriod = reportPeriod;
+            
+            // Debug: mostrar qué datos están disponibles
+            console.log('🔍 Datos disponibles en localStorage:');
+            console.log('- tutorAvailability:', JSON.parse(localStorage.getItem('tutorAvailability') || '[]'));
+            console.log('- sesiones:', JSON.parse(localStorage.getItem('sesiones') || '[]'));
+            console.log('- confirmedSessions:', JSON.parse(localStorage.getItem('confirmedSessions') || '[]'));
+            console.log('- rejectedSessions:', JSON.parse(localStorage.getItem('rejectedSessions') || '[]'));
+            console.log('- completedSessions:', JSON.parse(localStorage.getItem('completedSessions') || '[]'));
+            console.log('- usuarios:', JSON.parse(localStorage.getItem('usuarios') || '[]'));
+            console.log('- users:', JSON.parse(localStorage.getItem('users') || '[]'));
+            console.log('- userData:', JSON.parse(localStorage.getItem('userData') || '[]'));
+            console.log('- adminUsers:', JSON.parse(localStorage.getItem('adminUsers') || '[]'));
+            console.log('- sessionData:', JSON.parse(localStorage.getItem('sessionData') || '[]'));
+            console.log('- adminSessions:', JSON.parse(localStorage.getItem('adminSessions') || '[]'));
+            console.log('- tutoringSessions:', JSON.parse(localStorage.getItem('tutoringSessions') || '[]'));
+            console.log('- asistenciaData:', JSON.parse(localStorage.getItem('asistenciaData') || '[]'));
+            console.log('- attendanceData:', JSON.parse(localStorage.getItem('attendanceData') || '[]'));
+            console.log('- controlAsistencia:', JSON.parse(localStorage.getItem('controlAsistencia') || '[]'));
+            console.log('- adminAttendance:', JSON.parse(localStorage.getItem('adminAttendance') || '[]'));
+            console.log('- tutores:', JSON.parse(localStorage.getItem('tutores') || '[]'));
+            console.log('- tutorData:', JSON.parse(localStorage.getItem('tutorData') || '[]'));
+            console.log('- adminTutores:', JSON.parse(localStorage.getItem('adminTutores') || '[]'));
+            console.log('- tutoringTutors:', JSON.parse(localStorage.getItem('tutoringTutors') || '[]'));
+            
+            // Mostrar todas las claves disponibles en localStorage
+            console.log('📋 Todas las claves en localStorage:', Object.keys(localStorage));
+            
+            // Mostrar loading
+            showReportLoading('Generando reporte...');
+            
+            // Simular carga de datos (aquí se conectaría con el backend real)
+            setTimeout(() => {
+                currentReportData = getReportData(reportType, reportPeriod);
+                console.log('📊 Datos del reporte generado:', currentReportData);
+                displayReport(currentReportData, reportType);
+                enableExportButtons();
+                hideReportLoading();
+            }, 1500);
+        }
+
+        // Función para obtener datos del reporte (datos reales del sistema)
+        function getReportData(type, period) {
+            const today = new Date();
+            const periodText = getPeriodText(period, today);
+            
+            switch(type) {
+                case 'asistencia':
+                    return getAsistenciaData(periodText, today);
+                    
+                case 'usuarios':
+                    return getUsuariosData(periodText, today);
+                    
+                case 'sesiones':
+                    return getSesionesData(periodText, today);
+                    
+                case 'tutores':
+                    return getTutoresData(periodText, today);
+                    
+                default:
+                    return null;
+            }
+        }
+
+        // Función para obtener datos de asistencia reales
+        function getAsistenciaData(periodText, today) {
+            // Intentar obtener datos del backend primero
+            if (typeof BackendAPI !== 'undefined' && BackendAPI.getAsistencia) {
+                try {
+                    const asistenciaData = BackendAPI.getAsistencia();
+                    return {
+                        title: 'Control de Asistencia',
+                        period: periodText,
+                        generated: today.toLocaleString('es-ES'),
+                        data: asistenciaData,
+                        summary: calculateAsistenciaSummary(asistenciaData)
+                    };
+                } catch (error) {
+                    console.log('Error obteniendo datos del backend, usando localStorage:', error);
+                }
+            }
+            
+            // Fallback: obtener datos del localStorage
+            const asistenciaData = getAsistenciaFromLocalStorage();
+            return {
+                title: 'Control de Asistencia',
+                period: periodText,
+                generated: today.toLocaleString('es-ES'),
+                data: asistenciaData,
+                summary: calculateAsistenciaSummary(asistenciaData)
+            };
+        }
+
+        // Función para obtener datos de usuarios reales
+        function getUsuariosData(periodText, today) {
+            // Intentar obtener datos del backend primero
+            if (typeof BackendAPI !== 'undefined' && BackendAPI.getUsuarios) {
+                try {
+                    const usuariosData = BackendAPI.getUsuarios();
+                    return {
+                        title: 'Usuarios Activos del Sistema',
+                        period: periodText,
+                        generated: today.toLocaleString('es-ES'),
+                        data: usuariosData,
+                        summary: calculateUsuariosSummary(usuariosData)
+                    };
+                } catch (error) {
+                    console.log('Error obteniendo datos del backend, usando localStorage:', error);
+                }
+            }
+            
+            // Fallback: obtener datos del localStorage
+            const usuariosData = getUsuariosFromLocalStorage();
+            return {
+                title: 'Usuarios Activos del Sistema',
+                period: periodText,
+                generated: today.toLocaleString('es-ES'),
+                data: usuariosData,
+                summary: calculateUsuariosSummary(usuariosData)
+            };
+        }
+
+        // Función para obtener datos de sesiones reales
+        function getSesionesData(periodText, today) {
+            // Intentar obtener datos del backend primero
+            if (typeof BackendAPI !== 'undefined' && BackendAPI.getSesiones) {
+                try {
+                    const sesionesData = BackendAPI.getSesiones();
+                    return {
+                        title: 'Sesiones de Tutoría por Período',
+                        period: periodText,
+                        generated: today.toLocaleString('es-ES'),
+                        data: sesionesData,
+                        summary: calculateSesionesSummary(sesionesData)
+                    };
+                } catch (error) {
+                    console.log('Error obteniendo datos del backend, usando localStorage:', error);
+                }
+            }
+            
+            // Fallback: obtener datos del localStorage
+            const sesionesData = getSesionesFromLocalStorage();
+            return {
+                title: 'Sesiones de Tutoría por Período',
+                period: periodText,
+                generated: today.toLocaleString('es-ES'),
+                data: sesionesData,
+                summary: calculateSesionesSummary(sesionesData)
+            };
+        }
+
+        // Función para obtener datos de tutores reales
+        function getTutoresData(periodText, today) {
+            // Intentar obtener datos del backend primero
+            if (typeof BackendAPI !== 'undefined' && BackendAPI.getTutores) {
+                try {
+                    const tutoresData = BackendAPI.getTutores();
+                    return {
+                        title: 'Actividad de Tutores',
+                        period: periodText,
+                        generated: today.toLocaleString('es-ES'),
+                        data: tutoresData,
+                        summary: calculateTutoresSummary(tutoresData)
+                    };
+                } catch (error) {
+                    console.log('Error obteniendo datos del backend, usando localStorage:', error);
+                }
+            }
+            
+            // Fallback: obtener datos del localStorage
+            const tutoresData = getTutoresFromLocalStorage();
+            return {
+                title: 'Actividad de Tutores',
+                period: periodText,
+                generated: today.toLocaleString('es-ES'),
+                data: tutoresData,
+                summary: calculateTutoresSummary(tutoresData)
+            };
+        }
+
+        // Función para obtener texto del período
+        function getPeriodText(period, date) {
+            if (period.startsWith('mes_')) {
+                const monthYear = period.replace('mes_', '');
+                const [year, month] = monthYear.split('-');
+                const monthDate = new Date(year, month - 1, 1);
+                return `Reporte del mes de ${monthDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`;
+            } else if (period.startsWith('año_')) {
+                const year = period.replace('año_', '');
+                return `Reporte del año ${year}`;
+            }
+            
+            switch(period) {
+                case 'hoy':
+                    return `Reporte del ${date.toLocaleDateString('es-ES')}`;
+                case 'semana':
+                    return `Reporte de la semana del ${date.toLocaleDateString('es-ES')}`;
+                case 'mes':
+                    return `Reporte del mes de ${date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`;
+                case 'año':
+                    return `Reporte del año ${date.getFullYear()}`;
+                default:
+                    return 'Reporte general';
+            }
+        }
+
+        // Función para mostrar/ocultar selectores específicos de período
+        function togglePeriodSelectors() {
+            const periodType = document.getElementById('reportPeriodType').value;
+            const monthSelector = document.getElementById('monthSelector');
+            const yearSelector = document.getElementById('yearSelector');
+            
+            // Ocultar todos los selectores específicos
+            monthSelector.style.display = 'none';
+            yearSelector.style.display = 'none';
+            
+            // Mostrar el selector correspondiente
+            if (periodType === 'mes') {
+                monthSelector.style.display = 'block';
+                // Establecer el mes actual como valor por defecto
+                const today = new Date();
+                const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+                document.getElementById('reportMonth').value = currentMonth;
+            } else if (periodType === 'año') {
+                yearSelector.style.display = 'block';
+                // Establecer el año actual como valor por defecto (1 de enero del año actual)
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                document.getElementById('reportYear').value = `${currentYear}-01-01`;
+            }
+        }
+
+        // Función para mostrar el reporte en pantalla
+        function displayReport(data, type) {
+            const resultsDiv = document.getElementById('reportResults');
+            const contentDiv = document.getElementById('reportContent');
+            
+            if (!data) {
+                contentDiv.innerHTML = '<p>No se encontraron datos para el reporte seleccionado.</p>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+            
+            let html = `
+                <div class="report-header">
+                    <h2>${data.title}</h2>
+                    <p><strong>Período:</strong> ${data.period}</p>
+                    <p><strong>Generado:</strong> ${data.generated}</p>
+                </div>
+                
+                <div class="report-summary">
+                    <h3>Resumen</h3>
+                    <div class="summary-grid">
+            `;
+            
+            // Agregar resumen según el tipo
+            Object.entries(data.summary).forEach(([key, value]) => {
+                html += `<div class="summary-item"><strong>${key}:</strong> ${value}</div>`;
+            });
+            
+            html += `
+                    </div>
+                </div>
+                
+                <div class="report-table">
+                    <h3>Datos Detallados</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+            `;
+            
+            // Generar encabezados de tabla según el tipo
+            const headers = getTableHeaders(type);
+            headers.forEach(header => {
+                html += `<th>${header}</th>`;
+            });
+            
+            html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // Generar filas de datos
+            data.data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(header => {
+                    const key = getKeyFromHeader(header, type);
+                    html += `<td>${row[key] || '-'}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            contentDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+        }
+
+        // Función para obtener encabezados de tabla según el tipo
+        function getTableHeaders(type) {
+            switch(type) {
+                case 'asistencia':
+                    return ['Estudiante', 'Tutor', 'Materia', 'Fecha', 'Asistencia', 'Duración'];
+                case 'usuarios':
+                    return ['ID', 'Matrícula', 'Nombre Completo', 'Email', 'Rol', 'Estado'];
+                case 'sesiones':
+                    return ['ID', 'Estudiante', 'Tutor', 'Materia', 'Fecha', 'Hora', 'Duración', 'Estado'];
+                case 'tutores':
+                    return ['Tutor', 'Materia', 'Sesiones Realizadas', 'Estudiantes Atendidos', 'Promedio Duración', 'Calificación Promedio'];
+                default:
+                    return [];
+            }
+        }
+
+        // Función para obtener clave de objeto desde encabezado
+        function getKeyFromHeader(header, type) {
+            const mappings = {
+                'asistencia': {
+                    'Estudiante': 'estudiante',
+                    'Tutor': 'tutor',
+                    'Materia': 'materia',
+                    'Fecha': 'fecha',
+                    'Asistencia': 'asistencia',
+                    'Duración': 'duracion'
+                },
+                'usuarios': {
+                    'ID': 'id',
+                    'Matrícula': 'matricula',
+                    'Nombre Completo': 'nombreCompleto',
+                    'Email': 'email',
+                    'Rol': 'rol',
+                    'Estado': 'estado'
+                },
+                'sesiones': {
+                    'ID': 'id',
+                    'Estudiante': 'estudiante',
+                    'Tutor': 'tutor',
+                    'Materia': 'materia',
+                    'Fecha': 'fecha',
+                    'Hora': 'hora',
+                    'Duración': 'duracion',
+                    'Estado': 'estado'
+                },
+                'tutores': {
+                    'Tutor': 'tutor',
+                    'Materia': 'materia',
+                    'Sesiones Realizadas': 'sesionesRealizadas',
+                    'Estudiantes Atendidos': 'estudiantesAtendidos',
+                    'Promedio Duración': 'promedioDuracion',
+                    'Calificación Promedio': 'calificacionPromedio'
+                }
+            };
+            
+            return mappings[type] && mappings[type][header] ? mappings[type][header] : header.toLowerCase();
+        }
+
+        // Función para descargar PDF
+        function downloadPDF() {
+            if (!currentReportData) {
+                alert('Primero debe generar un reporte');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Configurar fuente y colores
+            doc.setFont('helvetica');
+            
+            // Título del reporte
+            doc.setFontSize(18);
+            doc.setTextColor(40, 40, 40);
+            doc.text(currentReportData.title, 20, 30);
+            
+            // Información del período y fecha
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Período: ${currentReportData.period}`, 20, 40);
+            doc.text(`Generado: ${currentReportData.generated}`, 20, 45);
+            
+            // Resumen
+            doc.setFontSize(12);
+            doc.setTextColor(40, 40, 40);
+            doc.text('Resumen', 20, 60);
+            
+            doc.setFontSize(10);
+            let yPosition = 70;
+            Object.entries(currentReportData.summary).forEach(([key, value]) => {
+                doc.text(`${key}: ${value}`, 20, yPosition);
+                yPosition += 5;
+            });
+            
+            // Tabla de datos
+            yPosition += 10;
+            doc.setFontSize(12);
+            doc.text('Datos Detallados', 20, yPosition);
+            
+            // Preparar datos para la tabla
+            const headers = getTableHeaders(currentReportType);
+            const tableData = currentReportData.data.map(row => {
+                return headers.map(header => {
+                    const key = getKeyFromHeader(header, currentReportType);
+                    return row[key] || '-';
+                });
+            });
+            
+            // Generar tabla
+            doc.autoTable({
+                head: [headers],
+                body: tableData,
+                startY: yPosition + 10,
+                styles: {
+                    fontSize: 8,
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [127, 2, 34],
+                    textColor: 255,
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                }
+            });
+            
+            // Pie de página
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+            }
+            
+            // Descargar el PDF
+            const fileName = `${currentReportData.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+        }
+
+        // Función para descargar Excel
+        function downloadExcel() {
+            if (!currentReportData) {
+                alert('Primero debe generar un reporte');
+                return;
+            }
+            
+            // Crear libro de trabajo
+            const wb = XLSX.utils.book_new();
+            
+            // Preparar datos para Excel
+            const headers = getTableHeaders(currentReportType);
+            const excelData = [
+                // Fila de encabezados
+                headers,
+                // Datos
+                ...currentReportData.data.map(row => {
+                    return headers.map(header => {
+                        const key = getKeyFromHeader(header, currentReportType);
+                        return row[key] || '-';
+                    });
+                })
+            ];
+            
+            // Crear hoja de trabajo
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            
+            // Configurar estilos básicos
+            ws['!cols'] = headers.map(() => ({ wch: 15 }));
+            
+            // Agregar información del reporte en las primeras filas
+            XLSX.utils.sheet_add_aoa(ws, [
+                [currentReportData.title],
+                [`Período: ${currentReportData.period}`],
+                [`Generado: ${currentReportData.generated}`],
+                [''], // Línea en blanco
+                ['Resumen:'],
+                ...Object.entries(currentReportData.summary).map(([key, value]) => [`${key}: ${value}`]),
+                [''], // Línea en blanco
+                ['Datos Detallados:']
+            ], { origin: 'A1' });
+            
+            // Agregar la hoja al libro
+            XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
+            
+            // Descargar el archivo
+            const fileName = `${currentReportData.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        }
+
+        // Función para vista previa
+        function previewReport() {
+            if (!currentReportData) {
+                alert('Primero debe generar un reporte');
+                return;
+            }
+            
+            // Mostrar el reporte si no está visible
+            const resultsDiv = document.getElementById('reportResults');
+            if (resultsDiv.style.display === 'none') {
+                displayReport(currentReportData, currentReportType);
+            }
+            
+            // Scroll hacia el reporte
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Función para habilitar botones de exportación
+        function enableExportButtons() {
+            document.getElementById('pdfBtn').disabled = false;
+            document.getElementById('excelBtn').disabled = false;
+            document.getElementById('previewBtn').disabled = false;
+        }
+
+        // Funciones auxiliares para UI
+        function showReportLoading(message) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'reportLoadingDiv';
+            loadingDiv.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            loadingDiv.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 15px; color: #7f0222;"></i>
+                    <p style="margin: 0; font-size: 16px; color: #333;">${message}</p>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+        }
+
+        function hideReportLoading() {
+            const loadingDiv = document.getElementById('reportLoadingDiv');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // Función para exportar (mantener compatibilidad)
+        function exportReport() {
+            downloadExcel();
+        }
+
+        // Inicializar selectores cuando se carga la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer el mes actual como valor por defecto
+            const today = new Date();
+            const currentMonth = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+            document.getElementById('reportMonth').value = currentMonth;
+            
+            // Establecer el año actual como valor por defecto (1 de enero del año actual)
+            document.getElementById('reportYear').value = `${today.getFullYear()}-01-01`;
+        });
+
+        // FUNCIONES PARA OBTENER DATOS REALES DEL LOCALSTORAGE
+        
+        // Obtener datos de asistencia del localStorage
+        function getAsistenciaFromLocalStorage() {
+            try {
+                // Buscar datos de asistencia en localStorage - usar las mismas claves que usa la tabla de control de asistencia
+                const asistenciaData = JSON.parse(localStorage.getItem('asistenciaData')) || [];
+                
+                // Buscar en otras claves posibles donde puedan estar los datos de asistencia
+                const asistenciaAlternativa = JSON.parse(localStorage.getItem('attendanceData')) || 
+                                            JSON.parse(localStorage.getItem('controlAsistencia')) || 
+                                            JSON.parse(localStorage.getItem('adminAttendance')) || [];
+                
+                if (asistenciaAlternativa.length > 0) {
+                    return asistenciaAlternativa;
+                }
+                
+                return asistenciaData;
+            } catch (error) {
+                console.error('Error obteniendo datos de asistencia:', error);
+                return [];
+            }
+        }
+
+        // Obtener datos de usuarios del localStorage
+        function getUsuariosFromLocalStorage() {
+            try {
+                // Buscar usuarios en localStorage - usar las mismas claves que usa la tabla de gestión de usuarios
+                const usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+                
+                // Si no hay usuarios, intentar obtener de otras fuentes del sistema
+                if (usuarios.length === 0) {
+                    // Buscar en otras claves posibles donde puedan estar los usuarios
+                    const usuariosAlternativos = JSON.parse(localStorage.getItem('users')) || 
+                                               JSON.parse(localStorage.getItem('userData')) || 
+                                               JSON.parse(localStorage.getItem('adminUsers')) || [];
+                    
+                    if (usuariosAlternativos.length > 0) {
+                        return usuariosAlternativos;
+                    }
+                    
+                    // Si no hay datos reales, retornar array vacío
+                    return [];
+                }
+                
+                return usuarios;
+            } catch (error) {
+                console.error('Error obteniendo datos de usuarios:', error);
+                return [];
+            }
+        }
+
+        // Obtener datos de sesiones del localStorage
+        function getSesionesFromLocalStorage() {
+            try {
+                // Buscar sesiones en localStorage - usar las mismas claves que usa la tabla de sesiones del admin
+                const sesiones = JSON.parse(localStorage.getItem('sesiones')) || [];
+                const sesionesConfirmadas = JSON.parse(localStorage.getItem('confirmedSessions')) || [];
+                const sesionesRechazadas = JSON.parse(localStorage.getItem('rejectedSessions')) || [];
+                const sesionesCompletadas = JSON.parse(localStorage.getItem('completedSessions')) || [];
+                
+                // Buscar en otras claves posibles donde puedan estar las sesiones
+                const sesionesAlternativas = JSON.parse(localStorage.getItem('sessionData')) || 
+                                           JSON.parse(localStorage.getItem('adminSessions')) || 
+                                           JSON.parse(localStorage.getItem('tutoringSessions')) || [];
+                
+                // Combinar todas las sesiones
+                const todasLasSesiones = [
+                    ...sesiones,
+                    ...sesionesConfirmadas,
+                    ...sesionesRechazadas,
+                    ...sesionesCompletadas,
+                    ...sesionesAlternativas
+                ];
+                
+                return todasLasSesiones;
+            } catch (error) {
+                console.error('Error obteniendo datos de sesiones:', error);
+                return [];
+            }
+        }
+
+        // Obtener datos de tutores del localStorage
+        function getTutoresFromLocalStorage() {
+            try {
+                // Buscar tutores en localStorage - usar las mismas claves que usa la tabla de tutores
+                const tutores = JSON.parse(localStorage.getItem('tutores')) || [];
+                
+                // Buscar en otras claves posibles donde puedan estar los datos de tutores
+                const tutoresAlternativos = JSON.parse(localStorage.getItem('tutorData')) || 
+                                          JSON.parse(localStorage.getItem('adminTutores')) || 
+                                          JSON.parse(localStorage.getItem('tutoringTutors')) || [];
+                
+                if (tutoresAlternativos.length > 0) {
+                    return tutoresAlternativos;
+                }
+                
+                return tutores;
+            } catch (error) {
+                console.error('Error obteniendo datos de tutores:', error);
+                return [];
+            }
+        }
+
+        // FUNCIONES PARA CALCULAR RESUMENES
+        
+        function calculateAsistenciaSummary(data) {
+            const total = data.length;
+            const presentes = data.filter(item => item.asistencia === 'Presente').length;
+            const ausentes = data.filter(item => item.asistencia === 'Ausente').length;
+            const tardanzas = data.filter(item => item.asistencia === 'Tardanza').length;
+            const porcentajeAsistencia = total > 0 ? Math.round((presentes / total) * 100) : 0;
+            
+            return {
+                total,
+                presentes,
+                ausentes,
+                tardanzas,
+                porcentajeAsistencia
+            };
+        }
+
+        function calculateUsuariosSummary(data) {
+            const total = data.length;
+            const estudiantes = data.filter(item => item.rol === 'Alumno' || item.rol === 'Estudiante').length;
+            const tutores = data.filter(item => item.rol === 'Tutor').length;
+            const administradores = data.filter(item => item.rol === 'Admin' || item.rol === 'Administrador').length;
+            const usuariosActivos = data.filter(item => item.estado === 'Activo').length;
+            
+            return {
+                total,
+                estudiantes,
+                tutores,
+                administradores,
+                usuariosActivos
+            };
+        }
+
+        function calculateSesionesSummary(data) {
+            const total = data.length;
+            const completadas = data.filter(item => item.estado === 'Completada').length;
+            const canceladas = data.filter(item => item.estado === 'Cancelada').length;
+            const pendientes = data.filter(item => item.estado === 'Pendiente').length;
+            
+            const duraciones = data.map(item => {
+                const duracion = item.duracion || item.duration || '60 min';
+                return parseInt(duracion.replace(/\D/g, '')) || 60;
+            });
+            
+            const duracionPromedio = duraciones.length > 0 ? 
+                Math.round(duraciones.reduce((a, b) => a + b, 0) / duraciones.length) : 0;
+            
+            return {
+                total,
+                completadas,
+                canceladas,
+                pendientes,
+                duracionPromedio: `${duracionPromedio} min`
+            };
+        }
+
+        function calculateTutoresSummary(data) {
+            const totalTutores = data.length;
+            const totalSesiones = data.reduce((sum, tutor) => sum + (tutor.sesionesRealizadas || 0), 0);
+            const estudiantesAtendidos = data.reduce((sum, tutor) => sum + (tutor.estudiantesAtendidos || 0), 0);
+            
+            const calificaciones = data.map(tutor => parseFloat(tutor.calificacionPromedio || '4.5'));
+            const promedioCalificacion = calificaciones.length > 0 ? 
+                (calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length).toFixed(2) : '4.5';
+            
+            return {
+                totalTutores,
+                totalSesiones,
+                promedioCalificacion,
+                tutoresActivos: totalTutores,
+                estudiantesAtendidos
+            };
+        }
+    </script>
 </body>
 </html>

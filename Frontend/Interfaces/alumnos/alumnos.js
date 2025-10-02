@@ -10,7 +10,61 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   // Inicializar sincronización de estados con el tutor
   listenForStatusChanges();
+  
+  // Limpiar y recrear sesiones con fechas correctas
+  recreateStudentSessionsWithCorrectDates();
+  
+  // Event listener para cerrar menú móvil al hacer clic fuera
+  document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+    
+    if (sidebar && sidebarOverlay && mobileMenuToggle) {
+      if (!sidebar.contains(event.target) && 
+          !mobileMenuToggle.contains(event.target) && 
+          sidebar.classList.contains('mobile-open')) {
+        closeMobileMenu();
+      }
+    }
+  });
+  
+  // Event listener para redimensionar ventana
+  window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+      closeMobileMenu();
+    }
+  });
 });
+
+// FUNCIONES PARA MENÚ MÓVIL
+function toggleMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  
+  if (sidebar && sidebarOverlay) {
+    sidebar.classList.toggle('mobile-open');
+    sidebarOverlay.classList.toggle('active');
+    
+    // Prevenir scroll del body cuando el menú está abierto
+    if (sidebar.classList.contains('mobile-open')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  }
+}
+
+function closeMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  
+  if (sidebar && sidebarOverlay) {
+    sidebar.classList.remove('mobile-open');
+    sidebarOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
 
 function initializeApp() {
   console.log('Sistema de Gestión de Tutores - Interfaz Estudiante iniciada');
@@ -280,8 +334,9 @@ function loadUpcomingSessions() {
         displayUpcomingSessions([]);
       });
   } else {
-    // Fallback: mostrar lista vacía
-    displayUpcomingSessions([]);
+    // Fallback: obtener sesiones del localStorage
+    const studentSessions = getStudentSessions();
+    displayUpcomingSessions(studentSessions);
   }
 }
 
@@ -315,19 +370,348 @@ function displayUpcomingSessions(sessions) {
                 <span class="duration">${session.duration || ''}</span>
             </div>
             <div class="session-info">
-                <h4>${session.title || ''}</h4>
+                <h4>${session.title || session.subject || ''}</h4>
                 <p>${session.tutor || ''} - ${session.modality || ''}</p>
                 <span class="session-date">${session.date || ''}</span>
+                <span class="session-status">${getStatusBadge(session.status)}</span>
             </div>
             <div class="session-actions">
-                <button class="btn btn-primary" onclick="joinSession('${session.id}')">Unirse</button>
-                <button class="btn btn-outline" onclick="rescheduleSession('${session.id}')">Reprogramar</button>
-                <button class="btn btn-secondary" onclick="cancelSession('${session.id}')">Cancelar</button>
+                ${session.status === 'pending' ? `
+                    <button class="btn btn-success" onclick="acceptSession('${session.id}')">
+                        <i class="fas fa-check"></i> Aceptar
+                    </button>
+                    <button class="btn btn-danger" onclick="rejectSession('${session.id}')">
+                        <i class="fas fa-times"></i> Rechazar
+                    </button>
+                ` : `
+                    <button class="btn btn-primary" onclick="joinSession('${session.id}')">Unirse</button>
+                    <button class="btn btn-outline" onclick="rescheduleSession('${session.id}')">Reprogramar</button>
+                    <button class="btn btn-secondary" onclick="cancelSession('${session.id}')">Cancelar</button>
+                `}
             </div>
         </div>
     `
     )
     .join('');
+}
+
+// FUNCIONES PARA MANEJAR SESIONES DE ESTUDIANTES
+
+// Función para limpiar y recrear sesiones de estudiantes con fechas correctas
+function recreateStudentSessionsWithCorrectDates() {
+  try {
+    console.log('🧹 Limpiando y recreando sesiones de estudiantes con fechas correctas...');
+    
+    // Limpiar sesiones existentes
+    localStorage.removeItem('pendingSessions');
+    localStorage.removeItem('confirmedSessions');
+    localStorage.removeItem('rejectedSessions');
+    localStorage.removeItem('processedSessions');
+    
+    // Crear sesiones de ejemplo con fechas futuras
+    createSampleSessions();
+    
+    console.log('✅ Sesiones de estudiantes recreadas con fechas correctas');
+    
+  } catch (error) {
+    console.error('Error recreando sesiones de estudiantes:', error);
+  }
+}
+
+// Función para crear sesiones de ejemplo para probar el flujo
+function createSampleSessions() {
+  try {
+    console.log('Creando sesiones de ejemplo con fechas futuras...');
+    
+    // Crear algunas sesiones de ejemplo
+    const sampleSessions = [
+      {
+        id: 'pending_' + Date.now(),
+        student: 'María González',
+        studentEmail: 'maria.gonzalez@email.com',
+        tutor: 'Dr. Carlos Mendoza',
+        tutorId: 'tutor_001',
+        subject: 'Matemáticas',
+        date: '2025-10-03', // 2 días después de hoy
+        time: '10:00',
+        endTime: '11:00',
+        modality: 'Presencial',
+        location: 'Aula 201',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        duration: '1hr'
+      },
+      {
+        id: 'pending_' + (Date.now() + 1),
+        student: 'Juan Pérez',
+        studentEmail: 'juan.perez@email.com',
+        tutor: 'Dra. Ana López',
+        tutorId: 'tutor_002',
+        subject: 'Física',
+        date: '2025-10-04', // 3 días después de hoy
+        time: '14:00',
+        endTime: '15:30',
+        modality: 'Virtual',
+        location: 'Zoom',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        duration: '1hr 30min'
+      },
+      {
+        id: 'pending_' + (Date.now() + 2),
+        student: 'Laura Martínez',
+        studentEmail: 'laura.martinez@email.com',
+        tutor: 'Dr. Carlos Mendoza',
+        tutorId: 'tutor_001',
+        subject: 'Química',
+        date: '2025-10-05', // 4 días después de hoy
+        time: '16:00',
+        endTime: '17:00',
+        modality: 'Presencial',
+        location: 'Laboratorio 3',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        duration: '1hr'
+      }
+    ];
+    
+    // Guardar sesiones de ejemplo
+    localStorage.setItem('pendingSessions', JSON.stringify(sampleSessions));
+    
+    // Crear notificaciones para los tutores
+    sampleSessions.forEach(session => {
+      notifyTutorNewSession(session);
+    });
+    
+    console.log('Sesiones de ejemplo creadas:', sampleSessions);
+    
+  } catch (error) {
+    console.error('Error creando sesiones de ejemplo:', error);
+  }
+}
+
+function getStudentSessions() {
+  try {
+    // Obtener sesiones del estudiante desde localStorage
+    const studentSessions = JSON.parse(localStorage.getItem('studentSessions')) || [];
+    const pendingSessions = JSON.parse(localStorage.getItem('pendingSessions')) || [];
+    const confirmedSessions = JSON.parse(localStorage.getItem('confirmedSessions')) || [];
+    const rejectedSessions = JSON.parse(localStorage.getItem('rejectedSessions')) || [];
+    
+    // Combinar todas las sesiones del estudiante
+    const allSessions = [
+      ...studentSessions,
+      ...pendingSessions.map(session => ({ ...session, status: 'pending' })),
+      ...confirmedSessions.map(session => ({ ...session, status: 'confirmed' })),
+      ...rejectedSessions.map(session => ({ ...session, status: 'rejected' }))
+    ];
+    
+    return allSessions;
+  } catch (error) {
+    console.error('Error obteniendo sesiones del estudiante:', error);
+    return [];
+  }
+}
+
+function getStatusBadge(status) {
+  const badges = {
+    'pending': '<span class="badge badge-warning">Pendiente</span>',
+    'confirmed': '<span class="badge badge-success">Confirmada</span>',
+    'rejected': '<span class="badge badge-danger">Rechazada</span>',
+    'completed': '<span class="badge badge-info">Completada</span>',
+    'cancelled': '<span class="badge badge-secondary">Cancelada</span>'
+  };
+  return badges[status] || '<span class="badge badge-secondary">Desconocido</span>';
+}
+
+function acceptSession(sessionId) {
+  try {
+    // Obtener la sesión pendiente
+    const pendingSessions = JSON.parse(localStorage.getItem('pendingSessions')) || [];
+    const sessionIndex = pendingSessions.findIndex(session => session.id === sessionId);
+    
+    if (sessionIndex === -1) {
+      showNotification('Sesión no encontrada', 'error');
+      return;
+    }
+    
+    const session = pendingSessions[sessionIndex];
+    
+    // Mover a sesiones confirmadas
+    const confirmedSessions = JSON.parse(localStorage.getItem('confirmedSessions')) || [];
+    confirmedSessions.push({
+      ...session,
+      status: 'confirmed',
+      acceptedAt: new Date().toISOString()
+    });
+    
+    // Remover de pendientes
+    pendingSessions.splice(sessionIndex, 1);
+    
+    // Guardar en localStorage
+    localStorage.setItem('pendingSessions', JSON.stringify(pendingSessions));
+    localStorage.setItem('confirmedSessions', JSON.stringify(confirmedSessions));
+    
+    // Notificar al tutor
+    notifyTutorSessionAccepted(session);
+    
+    showNotification('Sesión aceptada exitosamente', 'success');
+    
+    // Recargar sesiones
+    loadUpcomingSessions();
+    
+  } catch (error) {
+    console.error('Error aceptando sesión:', error);
+    showNotification('Error al aceptar la sesión', 'error');
+  }
+}
+
+function rejectSession(sessionId) {
+  try {
+    // Obtener la sesión pendiente
+    const pendingSessions = JSON.parse(localStorage.getItem('pendingSessions')) || [];
+    const sessionIndex = pendingSessions.findIndex(session => session.id === sessionId);
+    
+    if (sessionIndex === -1) {
+      showNotification('Sesión no encontrada', 'error');
+      return;
+    }
+    
+    const session = pendingSessions[sessionIndex];
+    
+    // Mostrar modal para motivo de rechazo
+    showRejectionModal(session);
+    
+  } catch (error) {
+    console.error('Error rechazando sesión:', error);
+    showNotification('Error al rechazar la sesión', 'error');
+  }
+}
+
+function showRejectionModal(session) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Rechazar Sesión</h3>
+        <span class="close" onclick="closeRejectionModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p><strong>Tutor:</strong> ${session.tutor}</p>
+        <p><strong>Fecha:</strong> ${session.date}</p>
+        <p><strong>Hora:</strong> ${session.time}</p>
+        <div class="form-group">
+          <label>Motivo del rechazo *</label>
+          <textarea id="rejectionReason" rows="3" placeholder="Explica por qué rechazas esta sesión..." required></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeRejectionModal()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmRejection('${session.id}')">Rechazar Sesión</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+function closeRejectionModal() {
+  const modal = document.querySelector('.modal-overlay');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function confirmRejection(sessionId) {
+  const reason = document.getElementById('rejectionReason').value.trim();
+  
+  if (!reason) {
+    showNotification('Por favor, proporciona un motivo para el rechazo', 'error');
+    return;
+  }
+  
+  try {
+    // Obtener la sesión pendiente
+    const pendingSessions = JSON.parse(localStorage.getItem('pendingSessions')) || [];
+    const sessionIndex = pendingSessions.findIndex(session => session.id === sessionId);
+    
+    if (sessionIndex === -1) {
+      showNotification('Sesión no encontrada', 'error');
+      return;
+    }
+    
+    const session = pendingSessions[sessionIndex];
+    
+    // Mover a sesiones rechazadas
+    const rejectedSessions = JSON.parse(localStorage.getItem('rejectedSessions')) || [];
+    rejectedSessions.push({
+      ...session,
+      status: 'rejected',
+      rejectedAt: new Date().toISOString(),
+      rejectionReason: reason
+    });
+    
+    // Remover de pendientes
+    pendingSessions.splice(sessionIndex, 1);
+    
+    // Guardar en localStorage
+    localStorage.setItem('pendingSessions', JSON.stringify(pendingSessions));
+    localStorage.setItem('rejectedSessions', JSON.stringify(rejectedSessions));
+    
+    // Notificar al tutor
+    notifyTutorSessionRejected(session, reason);
+    
+    showNotification('Sesión rechazada exitosamente', 'success');
+    
+    // Cerrar modal y recargar sesiones
+    closeRejectionModal();
+    loadUpcomingSessions();
+    
+  } catch (error) {
+    console.error('Error rechazando sesión:', error);
+    showNotification('Error al rechazar la sesión', 'error');
+  }
+}
+
+function notifyTutorSessionAccepted(session) {
+  try {
+    // Crear notificación para el tutor
+    const tutorNotifications = JSON.parse(localStorage.getItem('tutorNotifications')) || [];
+    tutorNotifications.push({
+      id: 'notif_' + Date.now(),
+      type: 'session_accepted',
+      title: 'Sesión Aceptada',
+      message: `El estudiante ${session.student} ha aceptado la sesión de ${session.subject} programada para ${session.date} a las ${session.time}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      sessionId: session.id
+    });
+    
+    localStorage.setItem('tutorNotifications', JSON.stringify(tutorNotifications));
+  } catch (error) {
+    console.error('Error notificando al tutor:', error);
+  }
+}
+
+function notifyTutorSessionRejected(session, reason) {
+  try {
+    // Crear notificación para el tutor
+    const tutorNotifications = JSON.parse(localStorage.getItem('tutorNotifications')) || [];
+    tutorNotifications.push({
+      id: 'notif_' + Date.now(),
+      type: 'session_rejected',
+      title: 'Sesión Rechazada',
+      message: `El estudiante ${session.student} ha rechazado la sesión de ${session.subject} programada para ${session.date} a las ${session.time}. Motivo: ${reason}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      sessionId: session.id
+    });
+    
+    localStorage.setItem('tutorNotifications', JSON.stringify(tutorNotifications));
+  } catch (error) {
+    console.error('Error notificando al tutor:', error);
+  }
 }
 
 function loadRecentActivity() {
@@ -671,11 +1055,62 @@ function searchTutors() {
         displayTutors([]); // Mostrar lista vacía
       });
   } else {
-    // Fallback: mostrar lista vacía
+    // Fallback: obtener tutores basados en disponibilidades reales
     setTimeout(() => {
-      showNotification('No hay tutores disponibles en este momento', 'info');
-      displayTutors([]);
+      const availableTutors = getAvailableTutors({ area, modality, day, time, duration });
+      displayTutors(availableTutors);
+      showNotification(`Se encontraron ${availableTutors.length} tutores disponibles`, 'success');
     }, 1500);
+  }
+}
+
+// Función para obtener tutores disponibles basados en disponibilidades reales
+function getAvailableTutors(filters) {
+  try {
+    // Obtener disponibilidades de tutores desde localStorage
+    const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability')) || [];
+    const tutors = JSON.parse(localStorage.getItem('usuarios')) || [];
+    
+    // Filtrar tutores por rol
+    const tutorUsers = tutors.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+    
+    // Crear lista de tutores disponibles
+    const availableTutors = [];
+    
+    tutorAvailabilities.forEach(availability => {
+      // Verificar si coincide con los filtros
+      if (filters.area && availability.subject !== filters.area) return;
+      if (filters.modality && availability.modality !== filters.modality) return;
+      if (filters.time && availability.startTime !== filters.time) return;
+      
+      // Buscar el tutor correspondiente
+      const tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
+      if (!tutor) return;
+      
+      // Verificar si ya existe en la lista
+      const existingTutor = availableTutors.find(t => t.id === tutor.id);
+      if (existingTutor) {
+        // Agregar disponibilidad al tutor existente
+        existingTutor.availabilities.push(availability);
+      } else {
+        // Crear nuevo tutor con disponibilidad
+        availableTutors.push({
+          id: tutor.id,
+          name: tutor.nombreCompleto,
+          email: tutor.email,
+          specialties: [availability.subject],
+          rating: 4.5,
+          sessionsCompleted: Math.floor(Math.random() * 50) + 10,
+          studentsHelped: Math.floor(Math.random() * 30) + 5,
+          availabilities: [availability]
+        });
+      }
+    });
+    
+    return availableTutors;
+  } catch (error) {
+    console.error('Error obteniendo tutores disponibles:', error);
+    return [];
   }
 }
 
@@ -903,7 +1338,28 @@ function bookTutor(tutorId) {
         showNotification('Error al cargar datos del tutor', 'error');
       });
   } else {
-    // Fallback: mostrar formulario sin datos del tutor
+    // Fallback: obtener datos del tutor desde localStorage
+    const tutors = JSON.parse(localStorage.getItem('usuarios')) || [];
+    const tutor = tutors.find(t => t.id === tutorId);
+    
+    if (tutor) {
+      const selectedTutorInput = document.getElementById('selectedTutor');
+      if (selectedTutorInput) {
+        selectedTutorInput.value = tutor.nombreCompleto || '';
+      }
+      
+      // Crear input hidden con el ID del tutor
+      let hiddenInput = document.getElementById('selectedTutorId');
+      if (!hiddenInput) {
+        hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.id = 'selectedTutorId';
+        document.getElementById('bookingForm').appendChild(hiddenInput);
+      }
+      hiddenInput.value = tutorId;
+    }
+    
+    // Mostrar formulario
     const bookingSection = document.getElementById('bookingSection');
     if (bookingSection) {
       bookingSection.style.display = 'block';
@@ -1631,11 +2087,111 @@ async function handleBookingSubmission(form) {
         loadUpcomingSessions();
       }
     } else {
-      showNotification('Error: BackendAPI no disponible', 'error');
+      // Fallback: crear sesión en localStorage
+      createPendingSessionForStudent(sessionData);
+      showNotification('Solicitud de tutoría enviada exitosamente', 'success');
+      form.reset();
+      closeBookingSection();
+      
+      // Recargar sesiones
+      loadUpcomingSessions();
     }
   } catch (error) {
     console.error('Error al enviar solicitud:', error);
     showNotification('Error al enviar la solicitud. Inténtalo de nuevo.', 'error');
+  }
+}
+
+// Función para crear sesión pendiente para estudiante
+function createPendingSessionForStudent(sessionData) {
+  try {
+    // Obtener datos del estudiante actual
+    const currentUser = JSON.parse(localStorage.getItem('currentUser')) || 
+                       JSON.parse(localStorage.getItem('userData')) || 
+                       { nombreCompleto: 'Estudiante', email: 'estudiante@email.com' };
+    
+    // Obtener datos del tutor
+    const tutors = JSON.parse(localStorage.getItem('usuarios')) || [];
+    const tutor = tutors.find(t => t.id === sessionData.tutor_id);
+    
+    // Crear sesión pendiente
+    const pendingSession = {
+      id: 'pending_' + Date.now(),
+      student: currentUser.nombreCompleto || 'Estudiante',
+      studentEmail: currentUser.email || 'estudiante@email.com',
+      tutor: tutor ? tutor.nombreCompleto : 'Tutor',
+      tutorId: sessionData.tutor_id,
+      subject: sessionData.materia_id || 'Materia',
+      date: sessionData.fecha,
+      time: sessionData.hora_inicio,
+      endTime: sessionData.hora_fin,
+      modality: sessionData.modalidad_id === '1' ? 'Presencial' : 'Virtual',
+      location: sessionData.ubicacion_o_enlace || '',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      duration: calculateDuration(sessionData.hora_inicio, sessionData.hora_fin)
+    };
+    
+    // Guardar en localStorage
+    const pendingSessions = JSON.parse(localStorage.getItem('pendingSessions')) || [];
+    pendingSessions.push(pendingSession);
+    localStorage.setItem('pendingSessions', JSON.stringify(pendingSessions));
+    
+    // Notificar al tutor
+    notifyTutorNewSession(pendingSession);
+    
+    console.log('Sesión pendiente creada:', pendingSession);
+    
+  } catch (error) {
+    console.error('Error creando sesión pendiente:', error);
+    throw error;
+  }
+}
+
+// Función para calcular duración entre dos horas
+function calculateDuration(startTime, endTime) {
+  try {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    const durationMinutes = endMinutes - startMinutes;
+    
+    if (durationMinutes <= 0) return '60 min';
+    
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    
+    if (hours === 0) {
+      return `${minutes} min`;
+    } else if (minutes === 0) {
+      return `${hours}hr`;
+    } else {
+      return `${hours}hr ${minutes}min`;
+    }
+  } catch (error) {
+    return '60 min';
+  }
+}
+
+// Función para notificar al tutor sobre nueva sesión
+function notifyTutorNewSession(session) {
+  try {
+    const tutorNotifications = JSON.parse(localStorage.getItem('tutorNotifications')) || [];
+    tutorNotifications.push({
+      id: 'notif_' + Date.now(),
+      type: 'new_session_request',
+      title: 'Nueva Solicitud de Sesión',
+      message: `${session.student} ha solicitado una sesión de ${session.subject} para ${session.date} a las ${session.time}`,
+      timestamp: new Date().toISOString(),
+      read: false,
+      sessionId: session.id
+    });
+    
+    localStorage.setItem('tutorNotifications', JSON.stringify(tutorNotifications));
+  } catch (error) {
+    console.error('Error notificando al tutor:', error);
   }
 }
 

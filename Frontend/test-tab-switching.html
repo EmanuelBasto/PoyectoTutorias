@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Cambio de Pestañas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .content-header {
+            margin-bottom: 30px;
+        }
+        .content-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .content-header p {
+            color: #666;
+            margin: 0;
+        }
+        .sessions-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .tab-btn:first-child {
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+        .tab-btn:last-child {
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #ffc107, #ff8f00);
+            color: white;
+            font-weight: 600;
+        }
+        .tab-btn:hover:not(.active) {
+            background: #f8f9fa;
+        }
+        .sessions-content {
+            min-height: 400px;
+        }
+        .session-tab-content {
+            display: none;
+        }
+        .session-tab-content.active {
+            display: block;
+        }
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            margin: 15px 0;
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .session-info {
+            flex: 1;
+        }
+        .session-main {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+        .session-main .date {
+            font-weight: 600;
+            color: #7f0222;
+            font-size: 1rem;
+            background: #fff3cd;
+            border: 1px solid #d19800;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+        }
+        .session-main .time {
+            font-weight: 500;
+            color: #333;
+        }
+        .session-details {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .session-details span {
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .subject {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .modality.presencial {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .modality.virtual {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+        .duration {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .session-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover {
+            color: #333;
+        }
+        .modal-footer {
+            margin-top: 20px;
+            text-align: right;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-group textarea:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        .modal-body p {
+            margin: 8px 0;
+            color: #333;
+        }
+        .modal-body strong {
+            color: #7f0222;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            background: #7f0222;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 300px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .notification.success {
+            background: #28a745;
+        }
+        .notification.error {
+            background: #dc3545;
+        }
+        .notification.info {
+            background: #17a2b8;
+        }
+        .no-sessions-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .no-sessions-message i {
+            font-size: 48px;
+            color: #ddd;
+            margin-bottom: 15px;
+        }
+        .test-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-controls h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .debug-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .status-badge.confirmed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-badge.rejected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="content-header">
+            <h2>Gestión de Sesiones - Prueba de Cambio de Pestañas</h2>
+            <p>Verificando que el cambio de pestañas funcione correctamente</p>
+        </div>
+        
+        <div class="test-controls">
+            <h4>🧪 Controles de Prueba</h4>
+            <button class="btn btn-primary" onclick="createTestData()">Crear Datos de Prueba</button>
+            <button class="btn btn-secondary" onclick="clearAllData()">Limpiar Todo</button>
+            <button class="btn btn-primary" onclick="loadSessionsData()">Recargar Sesiones</button>
+            <button class="btn btn-secondary" onclick="showDebugInfo()">Ver Debug Info</button>
+        </div>
+        
+        <div id="debugInfo" class="debug-info" style="display: none;">
+            <!-- Información de debug -->
+        </div>
+        
+        <div class="sessions-tabs">
+            <button class="tab-btn active" onclick="showSessionTab('pending')">Pendientes</button>
+            <button class="tab-btn" onclick="showSessionTab('confirmed')">Confirmadas</button>
+            <button class="tab-btn" onclick="showSessionTab('rejected')">No Aceptados</button>
+            <button class="tab-btn" onclick="showSessionTab('completed')">Completadas</button>
+        </div>
+        
+        <div class="sessions-content">
+            <div class="session-tab-content active" id="pendingSessions">
+                <!-- Las sesiones pendientes se cargarán dinámicamente -->
+            </div>
+            <div class="session-tab-content" id="confirmedSessions">
+                <!-- Las sesiones confirmadas se cargarán dinámicamente -->
+            </div>
+            <div class="session-tab-content" id="rejectedSessions">
+                <!-- Las sesiones no aceptadas se cargarán dinámicamente -->
+            </div>
+            <div class="session-tab-content" id="completedSessions">
+                <!-- Las sesiones completadas se cargarán dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de rechazo -->
+    <div id="rejectionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Rechazar Sesión</h3>
+                <span class="close" onclick="closeRejectionModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>Estudiante:</strong> <span id="modalStudentName"></span></p>
+                <p><strong>Materia:</strong> <span id="modalSubject"></span></p>
+                <p><strong>Fecha:</strong> <span id="modalDate"></span></p>
+                <p><strong>Hora:</strong> <span id="modalTime"></span></p>
+                
+                <div class="form-group">
+                    <label for="rejectionReason">Motivo del rechazo *</label>
+                    <textarea id="rejectionReason" rows="4" placeholder="Explica por qué rechazas esta sesión..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeRejectionModal()">Cancelar</button>
+                <button class="btn btn-danger" onclick="confirmRejection()">Rechazar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // FUNCIONES IGUAL QUE EN TUTORES.JS
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            
+            const [year, month, day] = dateString.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            const dayName = days[date.getDay()];
+            const dayNum = date.getDate();
+            const monthName = months[date.getMonth()];
+            const yearNum = date.getFullYear();
+            
+            return `${dayName} ${dayNum}/${monthName}/${yearNum}`;
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'p. m.' : 'a. m.';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        function formatDuration(minutes) {
+            if (!minutes || minutes <= 0) return '';
+            
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            
+            if (hours === 0) {
+                return `${remainingMinutes}min`;
+            } else if (remainingMinutes === 0) {
+                return `${hours}hr`;
+            } else {
+                return `${hours}hr ${remainingMinutes}min`;
+            }
+        }
+
+        function getSubjectName(subjectValue) {
+            const subjects = {
+                'quimica': 'Química',
+                'matematicas': 'Matemáticas',
+                'fisica': 'Física',
+                'biologia': 'Biología',
+                'historia': 'Historia'
+            };
+            return subjects[subjectValue] || subjectValue;
+        }
+
+        function getModalityName(modality) {
+            const modalities = {
+                'presencial': 'Presencial',
+                'virtual': 'Virtual'
+            };
+            return modalities[modality] || modality;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${getNotificationIcon(type)}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.opacity = '0';
+                    setTimeout(() => {
+                        if (notification.parentElement) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
+
+        function getNotificationIcon(type) {
+            const icons = {
+                success: 'check',
+                error: 'times',
+                warning: 'exclamation-triangle',
+                info: 'info'
+            };
+            return icons[type] || 'info';
+        }
+
+        // FUNCIÓN PARA CAMBIAR ENTRE PESTAÑAS (CORREGIDA)
+        function showSessionTab(tabType) {
+            console.log(`Cambiando a pestaña: ${tabType}`);
+            
+            // Ocultar todas las pestañas
+            document.querySelectorAll('.session-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remover clase active de todos los botones
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Mostrar la pestaña seleccionada
+            const targetTab = document.getElementById(tabType + 'Sessions');
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            
+            // Activar el botón correspondiente
+            const targetBtn = document.querySelector(`[onclick="showSessionTab('${tabType}')"]`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
+            
+            // Cargar datos de la pestaña seleccionada
+            if (tabType === 'pending') {
+                loadPendingSessions();
+            } else if (tabType === 'confirmed') {
+                loadConfirmedSessions();
+            } else if (tabType === 'rejected') {
+                loadRejectedSessions();
+            } else if (tabType === 'completed') {
+                loadCompletedSessions();
+            }
+        }
+
+        // FUNCIONES DE GESTIÓN DE SESIONES
+        function acceptRequest(sessionId) {
+            console.log('Aceptando sesión:', sessionId);
+            
+            const pendingSessions = getSamplePendingSessions();
+            const sessionToAccept = pendingSessions.find(session => session.id === sessionId);
+            
+            if (!sessionToAccept) {
+                showNotification('No se encontró la sesión para aceptar', 'error');
+                return;
+            }
+            
+            const confirmedSession = {
+                ...sessionToAccept,
+                confirmedAt: new Date().toISOString()
+            };
+            
+            const confirmedSessions = JSON.parse(localStorage.getItem('confirmedSessions') || '[]');
+            confirmedSessions.push(confirmedSession);
+            localStorage.setItem('confirmedSessions', JSON.stringify(confirmedSessions));
+            
+            // Marcar la sesión como procesada
+            const processedSessions = JSON.parse(localStorage.getItem('processedSessions') || '[]');
+            processedSessions.push(sessionId);
+            localStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+            
+            showNotification(`Sesión con ${sessionToAccept.studentName} aceptada exitosamente`, 'success');
+            
+            // Recargar las sesiones
+            loadSessionsData();
+            
+            // Cambiar automáticamente a la pestaña "Confirmadas"
+            showSessionTab('confirmed');
+        }
+
+        function rejectRequest(sessionId) {
+            console.log('Rechazando sesión:', sessionId);
+            
+            const pendingSessions = getSamplePendingSessions();
+            const sessionToReject = pendingSessions.find(session => session.id === sessionId);
+            
+            if (!sessionToReject) {
+                showNotification('No se encontró la sesión para rechazar', 'error');
+                return;
+            }
+            
+            showRejectionModal(sessionToReject);
+        }
+
+        function showRejectionModal(session) {
+            document.getElementById('modalStudentName').textContent = session.studentName;
+            document.getElementById('modalSubject').textContent = session.subject;
+            document.getElementById('modalDate').textContent = formatDate(session.date);
+            document.getElementById('modalTime').textContent = formatTime(session.time);
+            document.getElementById('rejectionReason').value = '';
+            
+            const modal = document.getElementById('rejectionModal');
+            modal.style.display = 'flex';
+            
+            // Guardar el ID de la sesión para el rechazo
+            window.currentRejectingSessionId = session.id;
+        }
+
+        function closeRejectionModal() {
+            const modal = document.getElementById('rejectionModal');
+            modal.style.display = 'none';
+        }
+
+        function confirmRejection() {
+            const rejectionReason = document.getElementById('rejectionReason').value.trim();
+            
+            if (!rejectionReason) {
+                showNotification('Por favor proporciona un motivo para el rechazo', 'error');
+                return;
+            }
+            
+            const pendingSessions = getSamplePendingSessions();
+            const sessionToReject = pendingSessions.find(session => session.id === window.currentRejectingSessionId);
+            
+            if (!sessionToReject) {
+                showNotification('No se encontró la sesión para rechazar', 'error');
+                return;
+            }
+            
+            const rejectedSession = {
+                ...sessionToReject,
+                rejectedAt: new Date().toISOString(),
+                reason: rejectionReason
+            };
+            
+            const rejectedSessions = JSON.parse(localStorage.getItem('rejectedSessions') || '[]');
+            rejectedSessions.push(rejectedSession);
+            localStorage.setItem('rejectedSessions', JSON.stringify(rejectedSessions));
+            
+            // Marcar la sesión como procesada
+            const processedSessions = JSON.parse(localStorage.getItem('processedSessions') || '[]');
+            processedSessions.push(window.currentRejectingSessionId);
+            localStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+            
+            closeRejectionModal();
+            showNotification(`Sesión con ${sessionToReject.studentName} rechazada`, 'info');
+            
+            // Recargar las sesiones
+            loadSessionsData();
+            
+            // Cambiar automáticamente a la pestaña "No Aceptados"
+            showSessionTab('rejected');
+        }
+
+        // FUNCIONES DE DATOS DE EJEMPLO
+        function getSamplePendingSessions() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (tutorAvailability.length === 0) {
+                return [];
+            }
+            
+            const students = [
+                { name: 'María González', email: 'maria.gonzalez@email.com' },
+                { name: 'Carlos Rodríguez', email: 'carlos.rodriguez@email.com' },
+                { name: 'Ana Martínez', email: 'ana.martinez@email.com' },
+                { name: 'Luis Fernández', email: 'luis.fernandez@email.com' },
+                { name: 'Sofia Herrera', email: 'sofia.herrera@email.com' }
+            ];
+            
+            const messages = [
+                'Necesito ayuda con este tema',
+                'Tengo dudas sobre la materia',
+                'Quiero repasar para el examen',
+                'Necesito explicación adicional',
+                'Ayuda con ejercicios prácticos'
+            ];
+            
+            // Obtener sesiones ya procesadas
+            const processedSessions = JSON.parse(localStorage.getItem('processedSessions') || '[]');
+            
+            return tutorAvailability.slice(0, 5).map((availability, index) => {
+                const student = students[index % students.length];
+                const message = messages[index % messages.length];
+                
+                return {
+                    id: `session_pending_${availability.id}`,
+                    studentName: student.name,
+                    studentEmail: student.email,
+                    subject: getSubjectName(availability.subject),
+                    date: availability.date,
+                    time: availability.startTime,
+                    duration: availability.duration,
+                    modality: getModalityName(availability.modality),
+                    location: availability.modality === 'presencial' ? 'Aula 201' : 'Zoom',
+                    message: message,
+                    createdAt: new Date().toISOString()
+                };
+            }).filter(session => !processedSessions.includes(session.id));
+        }
+
+        function getSampleConfirmedSessions() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (tutorAvailability.length === 0) {
+                return [];
+            }
+            
+            const students = [
+                { name: 'Pedro Sánchez', email: 'pedro.sanchez@email.com' },
+                { name: 'Laura García', email: 'laura.garcia@email.com' }
+            ];
+            
+            return tutorAvailability.slice(3, 5).map((availability, index) => {
+                const student = students[index % students.length];
+                
+                return {
+                    id: `session_confirmed_${availability.id}`,
+                    studentName: student.name,
+                    studentEmail: student.email,
+                    subject: getSubjectName(availability.subject),
+                    date: availability.date,
+                    time: availability.startTime,
+                    duration: availability.duration,
+                    modality: getModalityName(availability.modality),
+                    location: availability.modality === 'presencial' ? 'Aula 201' : 'Zoom',
+                    confirmedAt: new Date().toISOString()
+                };
+            });
+        }
+
+        function getSampleRejectedSessions() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (tutorAvailability.length === 0) {
+                return [];
+            }
+            
+            const students = [
+                { name: 'Roberto López', email: 'roberto.lopez@email.com' }
+            ];
+            
+            return tutorAvailability.slice(4, 5).map((availability, index) => {
+                const student = students[index % students.length];
+                
+                return {
+                    id: `session_rejected_${availability.id}`,
+                    studentName: student.name,
+                    studentEmail: student.email,
+                    subject: getSubjectName(availability.subject),
+                    date: availability.date,
+                    time: availability.startTime,
+                    duration: availability.duration,
+                    modality: getModalityName(availability.modality),
+                    location: availability.modality === 'presencial' ? 'Aula 201' : 'Zoom',
+                    reason: 'Horario no disponible',
+                    rejectedAt: new Date().toISOString()
+                };
+            });
+        }
+
+        function createTestData() {
+            const testAvailabilities = [
+                {
+                    id: 'avail_test_1',
+                    date: '2025-10-03',
+                    subject: 'quimica',
+                    startTime: '14:00',
+                    endTime: '16:00',
+                    modality: 'presencial',
+                    duration: 120,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_test_2',
+                    date: '2025-10-04',
+                    subject: 'matematicas',
+                    startTime: '10:00',
+                    endTime: '11:30',
+                    modality: 'virtual',
+                    duration: 90,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_test_3',
+                    date: '2025-10-05',
+                    subject: 'fisica',
+                    startTime: '16:00',
+                    endTime: '18:00',
+                    modality: 'presencial',
+                    duration: 120,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_test_4',
+                    date: '2025-10-06',
+                    subject: 'biologia',
+                    startTime: '09:00',
+                    endTime: '10:30',
+                    modality: 'virtual',
+                    duration: 90,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_test_5',
+                    date: '2025-10-07',
+                    subject: 'historia',
+                    startTime: '15:00',
+                    endTime: '16:30',
+                    modality: 'presencial',
+                    duration: 90,
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem('tutorAvailability', JSON.stringify(testAvailabilities));
+            showNotification('Datos de prueba creados', 'success');
+            loadSessionsData();
+        }
+
+        function clearAllData() {
+            localStorage.removeItem('tutorAvailability');
+            localStorage.removeItem('confirmedSessions');
+            localStorage.removeItem('rejectedSessions');
+            localStorage.removeItem('completedSessions');
+            localStorage.removeItem('processedSessions');
+            showNotification('Todos los datos eliminados', 'info');
+            loadSessionsData();
+        }
+
+        function showDebugInfo() {
+            const debugDiv = document.getElementById('debugInfo');
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const confirmedSessions = JSON.parse(localStorage.getItem('confirmedSessions') || '[]');
+            const rejectedSessions = JSON.parse(localStorage.getItem('rejectedSessions') || '[]');
+            const processedSessions = JSON.parse(localStorage.getItem('processedSessions') || '[]');
+            
+            debugDiv.innerHTML = `
+                <strong>Debug Info:</strong><br>
+                Disponibilidades: ${tutorAvailability.length}<br>
+                Sesiones Confirmadas: ${confirmedSessions.length}<br>
+                Sesiones Rechazadas: ${rejectedSessions.length}<br>
+                Sesiones Procesadas: ${processedSessions.length}<br>
+                IDs Procesados: ${processedSessions.join(', ')}
+            `;
+            debugDiv.style.display = debugDiv.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function loadSessionsData() {
+            loadPendingSessions();
+            loadConfirmedSessions();
+            loadRejectedSessions();
+            loadCompletedSessions();
+        }
+
+        function loadPendingSessions() {
+            const sessions = getSamplePendingSessions();
+            const container = document.getElementById('pendingSessions');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-sessions-message">
+                        <i class="fas fa-clock"></i>
+                        <h4>No hay sesiones pendientes</h4>
+                        <p>Todas las sesiones han sido procesadas.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = sessions.map(session => `
+                <div class="session-item">
+                    <div class="session-info">
+                        <div class="session-main">
+                            <span class="date">${formatDate(session.date)}</span>
+                            <span class="time">${formatTime(session.time)}</span>
+                        </div>
+                        <div class="session-details">
+                            <span class="subject">${session.subject}</span>
+                            <span class="modality ${session.modality.toLowerCase()}">${session.modality}</span>
+                            <span class="duration">${formatDuration(session.duration)}</span>
+                        </div>
+                        <p><strong>Estudiante:</strong> ${session.studentName}</p>
+                        <p><strong>Email:</strong> ${session.studentEmail}</p>
+                        <p><strong>Ubicación:</strong> ${session.location}</p>
+                        <p><strong>Mensaje:</strong> ${session.message}</p>
+                    </div>
+                    <div class="session-actions">
+                        <button class="btn btn-success" onclick="acceptRequest('${session.id}')">Aceptar</button>
+                        <button class="btn btn-danger" onclick="rejectRequest('${session.id}')">Rechazar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadConfirmedSessions() {
+            const sampleSessions = getSampleConfirmedSessions();
+            const savedSessions = JSON.parse(localStorage.getItem('confirmedSessions') || '[]');
+            const allSessions = [...sampleSessions, ...savedSessions];
+            const container = document.getElementById('confirmedSessions');
+            
+            if (allSessions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-sessions-message">
+                        <i class="fas fa-calendar-check"></i>
+                        <h4>No hay sesiones confirmadas</h4>
+                        <p>Las sesiones aceptadas aparecerán aquí.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = allSessions.map(session => `
+                <div class="session-item">
+                    <div class="session-info">
+                        <div class="session-main">
+                            <span class="date">${formatDate(session.date)}</span>
+                            <span class="time">${formatTime(session.time)}</span>
+                        </div>
+                        <div class="session-details">
+                            <span class="subject">${session.subject}</span>
+                            <span class="modality ${session.modality.toLowerCase()}">${session.modality}</span>
+                            <span class="duration">${formatDuration(session.duration)}</span>
+                            <span class="status-badge confirmed">Confirmada</span>
+                        </div>
+                        <p><strong>Estudiante:</strong> ${session.studentName}</p>
+                        <p><strong>Email:</strong> ${session.studentEmail}</p>
+                        <p><strong>Ubicación:</strong> ${session.location}</p>
+                        <p><strong>Confirmada:</strong> ${new Date(session.confirmedAt).toLocaleString()}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadRejectedSessions() {
+            const sampleSessions = getSampleRejectedSessions();
+            const savedSessions = JSON.parse(localStorage.getItem('rejectedSessions') || '[]');
+            const allSessions = [...sampleSessions, ...savedSessions];
+            const container = document.getElementById('rejectedSessions');
+            
+            if (allSessions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-sessions-message">
+                        <i class="fas fa-times-circle"></i>
+                        <h4>No hay sesiones rechazadas</h4>
+                        <p>Las sesiones rechazadas aparecerán aquí.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = allSessions.map(session => `
+                <div class="session-item">
+                    <div class="session-info">
+                        <div class="session-main">
+                            <span class="date">${formatDate(session.date)}</span>
+                            <span class="time">${formatTime(session.time)}</span>
+                        </div>
+                        <div class="session-details">
+                            <span class="subject">${session.subject}</span>
+                            <span class="modality ${session.modality.toLowerCase()}">${session.modality}</span>
+                            <span class="duration">${formatDuration(session.duration)}</span>
+                            <span class="status-badge rejected">Rechazada</span>
+                        </div>
+                        <p><strong>Estudiante:</strong> ${session.studentName}</p>
+                        <p><strong>Email:</strong> ${session.studentEmail}</p>
+                        <p><strong>Ubicación:</strong> ${session.location}</p>
+                        <p><strong>Motivo:</strong> ${session.reason}</p>
+                        <p><strong>Rechazada:</strong> ${new Date(session.rejectedAt).toLocaleString()}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadCompletedSessions() {
+            const sessions = JSON.parse(localStorage.getItem('completedSessions') || '[]');
+            const container = document.getElementById('completedSessions');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="no-sessions-message">
+                        <i class="fas fa-check-circle"></i>
+                        <h4>No hay sesiones completadas</h4>
+                        <p>Las sesiones completadas aparecerán aquí.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = sessions.map(session => `
+                <div class="session-item">
+                    <div class="session-info">
+                        <div class="session-main">
+                            <span class="date">${formatDate(session.date)}</span>
+                            <span class="time">${formatTime(session.time)}</span>
+                        </div>
+                        <div class="session-details">
+                            <span class="subject">${session.subject}</span>
+                            <span class="modality ${session.modality.toLowerCase()}">${session.modality}</span>
+                            <span class="duration">${formatDuration(session.duration)}</span>
+                            <span class="status">Completada</span>
+                        </div>
+                        <p><strong>Estudiante:</strong> ${session.studentName}</p>
+                        <p><strong>Email:</strong> ${session.studentEmail}</p>
+                        <p><strong>Ubicación:</strong> ${session.location}</p>
+                        <p><strong>Completada:</strong> ${new Date(session.completedAt).toLocaleString()}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSessionsData();
+        });
+    </script>
+</body>
+</html>

@@ -132,6 +132,180 @@ input, select {
           mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.86 21.86 0 0 1 5.06-6.94"/><path d="M1 1l22 22"/><path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/></svg>') no-repeat center/22px 22px;
 }
 
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .panel-izquierdo, .panel-derecho {
+    padding: 30px;
+  }
+  
+  .form-container {
+    max-width: 350px;
+    padding: 25px;
+  }
+  
+  .form-container h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .panel-izquierdo, .panel-derecho {
+    padding: 25px;
+  }
+  
+  .form-container {
+    max-width: 320px;
+    padding: 20px;
+  }
+  
+  .form-container h2 {
+    font-size: 1.4rem;
+  }
+  
+  .form-group input {
+    padding: 10px;
+  }
+  
+  .btn {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  .panel-izquierdo {
+    order: 2;
+    padding: 20px;
+    min-height: 200px;
+  }
+  
+  .panel-derecho {
+    order: 1;
+    padding: 30px 20px;
+    flex: none;
+  }
+  
+  .panel-izquierdo img {
+    max-width: 150px;
+  }
+  
+  .form-container {
+    max-width: 100%;
+    padding: 25px;
+  }
+  
+  .form-container h2 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .form-group input {
+    padding: 12px;
+    font-size: 15px;
+  }
+  
+  .btn {
+    padding: 12px;
+    font-size: 15px;
+  }
+  
+  .form-container p {
+    font-size: 13px;
+  }
+  
+  .form-container a {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel-izquierdo {
+    padding: 15px;
+    min-height: 150px;
+  }
+  
+  .panel-derecho {
+    padding: 20px 15px;
+  }
+  
+  .panel-izquierdo img {
+    max-width: 120px;
+  }
+  
+  .form-container {
+    padding: 20px;
+  }
+  
+  .form-container h2 {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .btn {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .form-container p {
+    font-size: 12px;
+  }
+  
+  .form-container a {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .panel-izquierdo {
+    padding: 10px;
+    min-height: 120px;
+  }
+  
+  .panel-derecho {
+    padding: 15px 10px;
+  }
+  
+  .panel-izquierdo img {
+    max-width: 100px;
+  }
+  
+  .form-container {
+    padding: 15px;
+  }
+  
+  .form-container h2 {
+    font-size: 1.1rem;
+  }
+  
+  .form-group input {
+    padding: 8px;
+    font-size: 13px;
+  }
+  
+  .btn {
+    padding: 8px;
+    font-size: 13px;
+  }
+}
+
 
 
 

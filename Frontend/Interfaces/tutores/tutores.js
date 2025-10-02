@@ -3,6 +3,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     loadSection('inicio');
+    
+    // Limpiar COMPLETAMENTE todas las sesiones y recrear con fechas correctas
+    clearAllSessionsAndRecreate();
 });
 
 // ===============================================
@@ -231,8 +234,13 @@ function loadUpcomingSessions() {
                 displayUpcomingSessions([]);
             });
     } else {
-        // Fallback: mostrar lista vacía
-        displayUpcomingSessions([]);
+        // Fallback: combinar sesiones pendientes con sesiones asignadas
+        const pendingSessions = getSamplePendingSessions();
+        const assignedSessions = getAssignedSessions();
+        
+        // Combinar y mostrar ambas
+        const allSessions = [...pendingSessions, ...assignedSessions];
+        displayUpcomingSessions(allSessions);
     }
 }
 
@@ -457,7 +465,7 @@ function displayCurrentAvailability(availability) {
                 <div class="availability-details">
                     <span class="subject">${getSubjectName(item.subject) || ''}</span>
                     <span class="modality ${item.modality || ''}">${getModalityName(item.modality) || ''}</span>
-                    <span class="duration">${item.duration || 45} min</span>
+                    <span class="duration">${formatDuration(item.duration || 45)}</span>
                 </div>
             </div>
             <div class="availability-actions">
@@ -614,6 +622,7 @@ function loadSesionesSection() {
         
         <div class="sessions-tabs">
             <button class="tab-btn active" onclick="showSessionTab('pending')">Pendientes</button>
+            <button class="tab-btn" onclick="showSessionTab('assigned')">Asignadas</button>
             <button class="tab-btn" onclick="showSessionTab('confirmed')">Confirmadas</button>
             <button class="tab-btn" onclick="showSessionTab('rejected')">No Aceptados</button>
             <button class="tab-btn" onclick="showSessionTab('completed')">Completadas</button>
@@ -622,6 +631,9 @@ function loadSesionesSection() {
         <div class="sessions-content">
             <div class="session-tab-content active" id="pendingSessions">
                 <!-- Las sesiones pendientes se cargarán dinámicamente desde el backend -->
+            </div>
+            <div class="session-tab-content" id="assignedSessions">
+                <!-- Las sesiones asignadas por el administrador se cargarán aquí -->
             </div>
             <div class="session-tab-content" id="confirmedSessions">
                 <!-- Las sesiones confirmadas se cargarán dinámicamente desde el backend -->
@@ -643,6 +655,9 @@ function loadSesionesSection() {
 function loadSessionsData() {
     // Cargar sesiones pendientes
     loadPendingSessions();
+    
+    // Cargar sesiones asignadas
+    loadAssignedSessions();
     
     // Cargar sesiones confirmadas
     loadConfirmedSessions();
@@ -669,8 +684,9 @@ function loadPendingSessions() {
                 displayPendingSessions([]);
             });
     } else {
-        // Fallback: mostrar lista vacía
-        displayPendingSessions([]);
+        // Fallback: mostrar datos de ejemplo
+        const sampleSessions = getSamplePendingSessions();
+        displayPendingSessions(sampleSessions);
     }
 }
 
@@ -695,19 +711,68 @@ function displayPendingSessions(sessions) {
     pendingSessionsContainer.innerHTML = sessions.map(session => `
                 <div class="session-item">
                     <div class="session-info">
-                <h4>${session.subject || ''}</h4>
-                <p><strong>Estudiante:</strong> ${session.studentName || ''}</p>
-                <p><strong>Fecha:</strong> ${session.date || ''}</p>
-                <p><strong>Hora:</strong> ${session.time || ''}</p>
-                <p><strong>Modalidad:</strong> ${session.modality || ''}</p>
-                <p><strong>Objetivo:</strong> ${session.objective || ''}</p>
+                        <h4>${session.subject || ''}</h4>
+                        <p><strong>Estudiante:</strong> ${session.studentName || ''}</p>
+                        <p><strong>Email:</strong> ${session.studentEmail || ''}</p>
+                        <p><strong>Fecha:</strong> ${formatDate(session.date) || ''}</p>
+                        <p><strong>Hora:</strong> ${formatTime(session.time) || ''}</p>
+                        <p><strong>Duración:</strong> ${formatDuration(session.duration) || ''}</p>
+                        <p><strong>Modalidad:</strong> ${session.modality || ''}</p>
+                        <p><strong>Ubicación:</strong> ${session.location || ''}</p>
+                        <p><strong>Mensaje:</strong> ${session.message || ''}</p>
                     </div>
                     <div class="session-actions">
-                <button class="btn btn-success" onclick="acceptRequest('${session.id}')">Aceptar</button>
-                <button class="btn btn-warning" onclick="proposeNewTime('${session.id}')">Proponer Nuevo Horario</button>
-                <button class="btn btn-danger" onclick="rejectRequest('${session.id}')">Rechazar</button>
+                        <button class="btn btn-success" onclick="acceptRequest('${session.id}')">Aceptar</button>
+                        <button class="btn btn-danger" onclick="rejectRequest('${session.id}')">Rechazar</button>
                     </div>
                 </div>
+    `).join('');
+}
+
+function loadAssignedSessions() {
+    const assignedSessionsContainer = document.getElementById('assignedSessions');
+    if (!assignedSessionsContainer) return;
+    
+    // Obtener sesiones asignadas por el administrador
+    const assignedSessions = getAssignedSessions();
+    displayAssignedSessions(assignedSessions);
+}
+
+function displayAssignedSessions(sessions) {
+    const assignedSessionsContainer = document.getElementById('assignedSessions');
+    if (!assignedSessionsContainer) return;
+    
+    if (sessions.length === 0) {
+        assignedSessionsContainer.innerHTML = `
+            <div class="no-sessions-message">
+                <div class="no-sessions-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h4>No tienes sesiones asignadas</h4>
+                <p>Las sesiones asignadas por el administrador aparecerán aquí.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Generar elementos de sesiones asignadas dinámicamente
+    assignedSessionsContainer.innerHTML = sessions.map(session => `
+        <div class="session-item assigned-session">
+            <div class="session-info">
+                <h4>${session.materia || 'Materia'}</h4>
+                <p><strong>Estudiante:</strong> ${session.alumno || 'Estudiante'}</p>
+                <p><strong>ID Sesión:</strong> ${session.id}</p>
+                <p><strong>Fecha:</strong> ${formatDate(session.fecha) || ''}</p>
+                <p><strong>Hora:</strong> ${formatTime(session.hora_inicio) || ''} - ${formatTime(session.hora_fin) || ''}</p>
+                <p><strong>Modalidad:</strong> ${session.modalidad || ''}</p>
+                <p><strong>Estado:</strong> <span class="status-badge assigned">Asignada</span></p>
+            </div>
+            <div class="session-actions">
+                <button class="btn btn-primary" onclick="acceptAssignedSession('${session.id}')">Aceptar</button>
+                <button class="btn btn-warning" onclick="rejectAssignedSession('${session.id}')">Rechazar</button>
+                <button class="btn btn-outline" onclick="viewSessionDetails('${session.id}')">Ver Detalles</button>
+            </div>
+        </div>
     `).join('');
 }
 
@@ -726,8 +791,11 @@ function loadConfirmedSessions() {
                 displayConfirmedSessions([]);
             });
     } else {
-        // Fallback: mostrar lista vacía
-        displayConfirmedSessions([]);
+        // Fallback: combinar datos de ejemplo con sesiones guardadas
+        const sampleSessions = getSampleConfirmedSessions();
+        const savedSessions = JSON.parse(localStorage.getItem('confirmedSessions') || '[]');
+        const allSessions = [...sampleSessions, ...savedSessions];
+        displayConfirmedSessions(allSessions);
     }
 }
 
@@ -754,13 +822,17 @@ function displayConfirmedSessions(sessions) {
             <div class="session-info">
                 <h4>${session.subject || ''}</h4>
                 <p><strong>Estudiante:</strong> ${session.studentName || ''}</p>
-                <p><strong>Fecha:</strong> ${session.date || ''}</p>
-                <p><strong>Hora:</strong> ${session.time || ''}</p>
+                <p><strong>Email:</strong> ${session.studentEmail || ''}</p>
+                <p><strong>Fecha:</strong> ${formatDate(session.date) || ''}</p>
+                <p><strong>Hora:</strong> ${formatTime(session.time) || ''}</p>
+                <p><strong>Duración:</strong> ${formatDuration(session.duration) || ''}</p>
                 <p><strong>Modalidad:</strong> ${session.modality || ''}</p>
+                <p><strong>Ubicación:</strong> ${session.location || ''}</p>
                 <p><strong>Estado:</strong> <span class="status-badge confirmed">Confirmada</span></p>
             </div>
             <div class="session-actions">
                 <button class="btn btn-primary" onclick="markAttendance('${session.id}')">Marcar Asistencia</button>
+                <button class="btn btn-success" onclick="markSessionAsCompleted('${session.id}')">Marcar Completada</button>
                 <button class="btn btn-outline" onclick="viewSessionDetails('${session.id}')">Ver Detalles</button>
                 <button class="btn btn-warning" onclick="rescheduleSession('${session.id}')">Reprogramar</button>
             </div>
@@ -783,8 +855,11 @@ function loadRejectedSessions() {
                 displayRejectedSessions([]);
             });
     } else {
-        // Fallback: mostrar lista vacía
-        displayRejectedSessions([]);
+        // Fallback: combinar datos de ejemplo con sesiones guardadas
+        const sampleSessions = getSampleRejectedSessions();
+        const savedSessions = JSON.parse(localStorage.getItem('rejectedSessions') || '[]');
+        const allSessions = [...sampleSessions, ...savedSessions];
+        displayRejectedSessions(allSessions);
     }
 }
 
@@ -811,11 +886,14 @@ function displayRejectedSessions(sessions) {
             <div class="session-info">
                 <h4>${session.subject || ''}</h4>
                 <p><strong>Estudiante:</strong> ${session.studentName || ''}</p>
-                <p><strong>Fecha:</strong> ${session.date || ''}</p>
-                <p><strong>Hora:</strong> ${session.time || ''}</p>
+                <p><strong>Email:</strong> ${session.studentEmail || ''}</p>
+                <p><strong>Fecha:</strong> ${formatDate(session.date) || ''}</p>
+                <p><strong>Hora:</strong> ${formatTime(session.time) || ''}</p>
+                <p><strong>Duración:</strong> ${formatDuration(session.duration) || ''}</p>
                 <p><strong>Modalidad:</strong> ${session.modality || ''}</p>
+                <p><strong>Ubicación:</strong> ${session.location || ''}</p>
                 <p><strong>Estado:</strong> <span class="status-badge rejected">Rechazada</span></p>
-                <p><strong>Motivo:</strong> ${session.rejectionReason || 'No especificado'}</p>
+                <p><strong>Motivo:</strong> ${session.reason || 'No especificado'}</p>
             </div>
             <div class="session-actions">
                 <button class="btn btn-outline" onclick="viewSessionDetails('${session.id}')">Ver Detalles</button>
@@ -840,8 +918,9 @@ function loadCompletedSessions() {
                 displayCompletedSessions([]);
             });
     } else {
-        // Fallback: mostrar lista vacía
-        displayCompletedSessions([]);
+        // Fallback: mostrar datos de ejemplo
+        const sampleSessions = getSampleCompletedSessions();
+        displayCompletedSessions(sampleSessions);
     }
 }
 
@@ -868,10 +947,15 @@ function displayCompletedSessions(sessions) {
             <div class="session-info">
                 <h4>${session.subject || ''}</h4>
                 <p><strong>Estudiante:</strong> ${session.studentName || ''}</p>
-                <p><strong>Fecha:</strong> ${session.date || ''}</p>
-                <p><strong>Hora:</strong> ${session.time || ''}</p>
+                <p><strong>Email:</strong> ${session.studentEmail || ''}</p>
+                <p><strong>Fecha:</strong> ${formatDate(session.date) || ''}</p>
+                <p><strong>Hora:</strong> ${formatTime(session.time) || ''}</p>
+                <p><strong>Duración:</strong> ${formatDuration(session.duration) || ''}</p>
                 <p><strong>Modalidad:</strong> ${session.modality || ''}</p>
+                <p><strong>Ubicación:</strong> ${session.location || ''}</p>
                 <p><strong>Estado:</strong> <span class="status-badge completed">Completada</span></p>
+                <p><strong>Calificación:</strong> ${session.rating ? '★'.repeat(session.rating) + ' (' + session.rating + '/5)' : 'Sin calificar'}</p>
+                <p><strong>Comentarios:</strong> ${session.feedback || 'Sin comentarios'}</p>
                 <p><strong>Asistencia:</strong> ${session.attendance || ''}</p>
             </div>
             <div class="session-actions">
@@ -884,6 +968,8 @@ function displayCompletedSessions(sessions) {
 
 // Función para cambiar entre pestañas de sesiones
 function showSessionTab(tabType) {
+    console.log(`Cambiando a pestaña: ${tabType}`);
+    
     // Ocultar todas las pestañas
     document.querySelectorAll('.session-tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -905,6 +991,21 @@ function showSessionTab(tabType) {
     if (targetBtn) {
         targetBtn.classList.add('active');
     }
+    
+    // Cargar datos de la pestaña seleccionada con un pequeño delay
+    setTimeout(() => {
+        if (tabType === 'pending') {
+            loadPendingSessions();
+        } else if (tabType === 'assigned') {
+            loadAssignedSessions();
+        } else if (tabType === 'confirmed') {
+            loadConfirmedSessions();
+        } else if (tabType === 'rejected') {
+            loadRejectedSessions();
+        } else if (tabType === 'completed') {
+            loadCompletedSessions();
+        }
+    }, 100);
 }
 
 // FUNCIONES SIMPLIFICADAS PARA GESTIÓN DE HORARIOS
@@ -963,7 +1064,9 @@ function saveSimpleSchedule() {
     const start = document.getElementById('scheduleStart').value;
     const end = document.getElementById('scheduleEnd').value;
     const modality = document.getElementById('scheduleModality').value;
-    const duration = document.getElementById('scheduleDuration').value;
+    
+    // Calcular duración automáticamente
+    const duration = calculateDuration(start, end);
     
     if (!date || !subject || !start || !end || !modality) {
         showNotification('Por favor completa todos los campos requeridos', 'error');
@@ -1003,7 +1106,7 @@ function saveSimpleSchedule() {
                 existingAvailability.startTime !== start ||
                 existingAvailability.endTime !== end ||
                 existingAvailability.modality !== modality ||
-                existingAvailability.duration !== parseInt(duration);
+                existingAvailability.duration !== duration;
             
             if (!hasChanges) {
                 showModalNotification('No se realizaron cambios', 'info');
@@ -1021,7 +1124,7 @@ function saveSimpleSchedule() {
         startTime: start,
         endTime: end,
         modality: modality,
-        duration: parseInt(duration),
+        duration: duration, // Usar la duración calculada automáticamente
         createdAt: editId ? undefined : new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
@@ -1199,6 +1302,60 @@ function getModalityName(modality) {
     return modalities[modality] || modality;
 }
 
+function calculateDuration(startTime, endTime) {
+    if (!startTime || !endTime) return 0;
+    
+    // Convertir horas a minutos para facilitar el cálculo
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+    
+    // Calcular la diferencia
+    let duration = endMinutes - startMinutes;
+    
+    // Si la duración es negativa (por ejemplo, de 23:00 a 01:00), asumir que es al día siguiente
+    if (duration < 0) {
+        duration += 24 * 60; // Agregar 24 horas en minutos
+    }
+    
+    return duration;
+}
+
+function timeToMinutes(timeString) {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+function formatDuration(minutes) {
+    if (!minutes || minutes <= 0) return '';
+    
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours === 0) {
+        return `${remainingMinutes}min`;
+    } else if (remainingMinutes === 0) {
+        return `${hours}hr`;
+    } else {
+        return `${hours}hr ${remainingMinutes}min`;
+    }
+}
+
+function updateDurationField() {
+    const startTime = document.getElementById('scheduleStart');
+    const endTime = document.getElementById('scheduleEnd');
+    const durationField = document.getElementById('scheduleDuration');
+    
+    if (startTime && endTime && durationField) {
+        const duration = calculateDuration(startTime.value, endTime.value);
+        
+        if (duration > 0) {
+            durationField.value = formatDuration(duration);
+        } else {
+            durationField.value = '';
+        }
+    }
+}
+
 function editAvailability(availabilityId) {
     console.log('Intentando editar disponibilidad:', availabilityId);
     
@@ -1284,7 +1441,9 @@ function populateScheduleForm(availability) {
         startInput.value = availability.startTime || '';
         endInput.value = availability.endTime || '';
         modalitySelect.value = availability.modality || '';
-        durationSelect.value = availability.duration || '45';
+        
+        // Calcular duración automáticamente
+        updateDurationField();
         
         // Cambiar el botón para indicar que es una edición
         const saveBtn = document.querySelector('[onclick="saveSimpleSchedule()"]');
@@ -2546,9 +2705,6 @@ function showAllActivity() {
     showNotification('Mostrando toda la actividad', 'info');
 }
 
-function showSessionTab(tab) {
-    showNotification(`Mostrando pestaña: ${tab}`, 'info');
-}
 
 // Función para actualizar el estado en el calendario del estudiante
 function updateStudentCalendarStatus(requestId, status) {
@@ -2614,7 +2770,773 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
         cleanOldAvailabilityData();
     }, 1000);
+    
+    // Agregar event listeners para calcular duración automáticamente
+    setTimeout(() => {
+        const startTimeField = document.getElementById('scheduleStart');
+        const endTimeField = document.getElementById('scheduleEnd');
+        
+        if (startTimeField) {
+            startTimeField.addEventListener('change', updateDurationField);
+            startTimeField.addEventListener('input', updateDurationField);
+        }
+        
+        if (endTimeField) {
+            endTimeField.addEventListener('change', updateDurationField);
+            endTimeField.addEventListener('input', updateDurationField);
+        }
+    }, 500);
+    
+    // Event listener para cerrar menú móvil al hacer clic fuera
+    document.addEventListener('click', function(event) {
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        
+        if (sidebar && sidebarOverlay && mobileMenuToggle) {
+            if (!sidebar.contains(event.target) && 
+                !mobileMenuToggle.contains(event.target) && 
+                sidebar.classList.contains('mobile-open')) {
+                closeMobileMenu();
+            }
+        }
+    });
+    
+    // Event listener para redimensionar ventana
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            closeMobileMenu();
+        }
+    });
 });
+
+// FUNCIONES PARA MENÚ MÓVIL
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (sidebar && sidebarOverlay) {
+        sidebar.classList.toggle('mobile-open');
+        sidebarOverlay.classList.toggle('active');
+        
+        // Prevenir scroll del body cuando el menú está abierto
+        if (sidebar.classList.contains('mobile-open')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    
+    if (sidebar && sidebarOverlay) {
+        sidebar.classList.remove('mobile-open');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// FUNCIONES PARA GESTIÓN DE SESIONES
+function acceptRequest(sessionId) {
+    console.log('Aceptando sesión:', sessionId);
+    
+    // Obtener las sesiones pendientes (tanto de ejemplo como reales)
+    const pendingSessions = getSamplePendingSessions();
+    const sessionToAccept = pendingSessions.find(session => session.id === sessionId);
+    
+    if (!sessionToAccept) {
+        showNotification('No se encontró la sesión para aceptar', 'error');
+        return;
+    }
+    
+    // Crear sesión real para el administrador
+    createRealSession(sessionToAccept);
+    
+    // Agregar timestamp de confirmación
+    const confirmedSession = {
+        ...sessionToAccept,
+        confirmedAt: new Date().toISOString()
+    };
+    
+    // Guardar en localStorage para sesiones confirmadas
+    const confirmedSessions = JSON.parse(localStorage.getItem('confirmedSessions') || '[]');
+    confirmedSessions.push(confirmedSession);
+    localStorage.setItem('confirmedSessions', JSON.stringify(confirmedSessions));
+    
+    // Marcar la sesión como procesada para que no aparezca más en pendientes
+    const processedSessions = JSON.parse(localStorage.getItem('processedSessions') || '[]');
+    processedSessions.push(sessionId);
+    localStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+    
+    showNotification(`Sesión con ${sessionToAccept.studentName} aceptada exitosamente`, 'success');
+    
+    // Recargar las sesiones
+    loadSessionsData();
+    
+    // Cambiar automáticamente a la pestaña "Confirmadas"
+    showSessionTab('confirmed');
+}
+
+function rejectRequest(sessionId) {
+    console.log('Rechazando sesión:', sessionId);
+    
+    // Obtener las sesiones pendientes (tanto de ejemplo como reales)
+    const pendingSessions = getSamplePendingSessions();
+    const sessionToReject = pendingSessions.find(session => session.id === sessionId);
+    
+    if (!sessionToReject) {
+        showNotification('No se encontró la sesión para rechazar', 'error');
+        return;
+    }
+    
+    // Mostrar modal para comentario de rechazo
+    showRejectionModal(sessionToReject);
+}
+
+function showRejectionModal(session) {
+    // Crear modal de rechazo
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'rejectionModal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Rechazar Sesión</h3>
+                <span class="close" onclick="closeRejectionModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>Estudiante:</strong> ${session.studentName}</p>
+                <p><strong>Materia:</strong> ${session.subject}</p>
+                <p><strong>Fecha:</strong> ${formatDate(session.date)}</p>
+                <p><strong>Hora:</strong> ${formatTime(session.time)}</p>
+                
+                <div class="form-group">
+                    <label for="rejectionReason">Motivo del rechazo *</label>
+                    <textarea id="rejectionReason" rows="4" placeholder="Explica por qué rechazas esta sesión..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeRejectionModal()">Cancelar</button>
+                <button class="btn btn-danger" onclick="confirmRejection('${session.id}')">Rechazar Sesión</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+}
+
+function closeRejectionModal() {
+    const modal = document.getElementById('rejectionModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function confirmRejection(sessionId) {
+    const rejectionReason = document.getElementById('rejectionReason').value.trim();
+    
+    if (!rejectionReason) {
+        showNotification('Por favor proporciona un motivo para el rechazo', 'error');
+        return;
+    }
+    
+    // Obtener las sesiones pendientes
+    const pendingSessions = getSamplePendingSessions();
+    const sessionToReject = pendingSessions.find(session => session.id === sessionId);
+    
+    if (!sessionToReject) {
+        showNotification('No se encontró la sesión para rechazar', 'error');
+        return;
+    }
+    
+    // Crear sesión rechazada
+    const rejectedSession = {
+        ...sessionToReject,
+        rejectedAt: new Date().toISOString(),
+        reason: rejectionReason
+    };
+    
+    // Guardar en localStorage para sesiones rechazadas
+    const rejectedSessions = JSON.parse(localStorage.getItem('rejectedSessions') || '[]');
+    rejectedSessions.push(rejectedSession);
+    localStorage.setItem('rejectedSessions', JSON.stringify(rejectedSessions));
+    
+    // Marcar la sesión como procesada para que no aparezca más en pendientes
+    const processedSessions = JSON.parse(localStorage.getItem('processedSessions') || '[]');
+    processedSessions.push(sessionId);
+    localStorage.setItem('processedSessions', JSON.stringify(processedSessions));
+    
+    // Cerrar modal
+    closeRejectionModal();
+    
+    showNotification(`Sesión con ${sessionToReject.studentName} rechazada`, 'info');
+    
+    // Recargar las sesiones
+    loadSessionsData();
+    
+    // Cambiar automáticamente a la pestaña "No Aceptados"
+    showSessionTab('rejected');
+}
+
+// FUNCIONES PARA DATOS DE EJEMPLO DE SESIONES
+function getSamplePendingSessions() {
+    try {
+        // Obtener sesiones pendientes reales creadas por estudiantes
+        const pendingSessions = JSON.parse(localStorage.getItem('pendingSessions') || '[]');
+        
+        // Obtener el nombre del tutor actual
+        const currentTutor = getCurrentTutorName();
+        
+        // Filtrar sesiones asignadas al tutor actual
+        const tutorPendingSessions = pendingSessions.filter(session => 
+            session.tutor === currentTutor || session.tutorId === getCurrentTutorId()
+        );
+        
+        // Obtener sesiones ya procesadas
+        const processedSessions = JSON.parse(localStorage.getItem('processedSessions') || '[]');
+        
+        // Filtrar sesiones no procesadas
+        const unprocessedSessions = tutorPendingSessions.filter(session => 
+            !processedSessions.includes(session.id)
+        );
+        
+        // Convertir formato para compatibilidad
+        return unprocessedSessions.map(session => ({
+            id: session.id,
+            studentName: session.student,
+            studentEmail: session.studentEmail,
+            subject: session.subject,
+            date: session.date,
+            time: session.time,
+            duration: session.duration,
+            modality: session.modality,
+            location: session.location,
+            message: `Solicitud de sesión de ${session.subject}`,
+            createdAt: session.createdAt
+        }));
+        
+    } catch (error) {
+        console.error('Error obteniendo sesiones pendientes:', error);
+        return [];
+    }
+}
+
+// Función para obtener el nombre del tutor actual
+function getCurrentTutorName() {
+    try {
+        // Intentar obtener desde localStorage
+        const tutorData = JSON.parse(localStorage.getItem('tutorData') || '{}');
+        if (tutorData.firstName && tutorData.lastName) {
+            return `${tutorData.firstName} ${tutorData.lastName}`;
+        }
+        
+        // Fallback: obtener desde usuarios
+        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+        const tutor = usuarios.find(u => u.rol === 'Tutor' || u.rol === 'tutor');
+        if (tutor) {
+            return tutor.nombreCompleto || 'Tutor';
+        }
+        
+        return 'Dr. Carlos Mendoza'; // Fallback por defecto
+    } catch (error) {
+        console.error('Error obteniendo nombre del tutor:', error);
+        return 'Dr. Carlos Mendoza';
+    }
+}
+
+// Función para obtener el ID del tutor actual
+function getCurrentTutorId() {
+    try {
+        // Intentar obtener desde localStorage
+        const tutorData = JSON.parse(localStorage.getItem('tutorData') || '{}');
+        if (tutorData.id) {
+            return tutorData.id;
+        }
+        
+        // Fallback: obtener desde usuarios
+        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+        const tutor = usuarios.find(u => u.rol === 'Tutor' || u.rol === 'tutor');
+        if (tutor) {
+            return tutor.id;
+        }
+        
+        return 'tutor_001'; // Fallback por defecto
+    } catch (error) {
+        console.error('Error obteniendo ID del tutor:', error);
+        return 'tutor_001';
+    }
+}
+
+// Función para obtener sesiones asignadas al tutor actual
+function getAssignedSessions() {
+    // Retornar siempre array vacío - sesiones asignadas eliminadas
+    return [];
+}
+
+// Función para crear una sesión real que el administrador pueda ver
+function createRealSession(sessionData) {
+    try {
+        // Obtener el tutor actual (en producción sería dinámico)
+        const currentTutor = 'Dr. Carlos Mendoza';
+        
+        // Crear ID corto para la sesión
+        const realSessions = JSON.parse(localStorage.getItem('realSessions') || '[]');
+        const sessionId = `SES-${String(realSessions.length + 1).padStart(3, '0')}`;
+        
+        // Crear sesión real
+        const realSession = {
+            id: sessionId,
+            alumno: sessionData.studentName || 'Estudiante',
+            tutor: currentTutor,
+            materia: sessionData.subject || 'Materia',
+            fecha: sessionData.date || new Date().toISOString().split('T')[0],
+            hora_inicio: sessionData.time || '10:00',
+            hora_fin: calculateEndTime(sessionData.time, sessionData.duration),
+            modalidad: sessionData.modality || 'Presencial',
+            estado: 'Confirmada',
+            motivo_cancelacion: null,
+            creado_en: new Date().toISOString(),
+            tutorAsignado: currentTutor,
+            estudiante_email: sessionData.studentEmail || '',
+            ubicacion: sessionData.location || '',
+            mensaje: sessionData.message || ''
+        };
+        
+        // Guardar en localStorage
+        realSessions.push(realSession);
+        localStorage.setItem('realSessions', JSON.stringify(realSessions));
+        
+        console.log('✅ Sesión real creada:', realSession);
+        
+        // También actualizar las sesiones organizadas por tutor
+        updateSessionsByTutor(realSession);
+        
+    } catch (error) {
+        console.error('❌ Error creando sesión real:', error);
+    }
+}
+
+// Función para calcular hora de fin basada en duración
+function calculateEndTime(startTime, duration) {
+    try {
+        const [hours, minutes] = startTime.split(':').map(Number);
+        const durationMinutes = parseDuration(duration);
+        
+        const totalMinutes = hours * 60 + minutes + durationMinutes;
+        const endHours = Math.floor(totalMinutes / 60);
+        const endMinutes = totalMinutes % 60;
+        
+        return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+    } catch (error) {
+        console.error('Error calculando hora de fin:', error);
+        return '11:00';
+    }
+}
+
+// Función para actualizar sesiones organizadas por tutor
+function updateSessionsByTutor(session) {
+    try {
+        const sessionsByTutor = JSON.parse(localStorage.getItem('sessionsByTutor') || '{}');
+        const tutorName = session.tutorAsignado || session.tutor;
+        
+        if (!sessionsByTutor[tutorName]) {
+            sessionsByTutor[tutorName] = [];
+        }
+        
+        sessionsByTutor[tutorName].push(session);
+        localStorage.setItem('sessionsByTutor', JSON.stringify(sessionsByTutor));
+        
+        console.log(`📚 Sesión agregada a ${tutorName}:`, session.id);
+        
+    } catch (error) {
+        console.error('Error actualizando sesiones por tutor:', error);
+    }
+}
+
+// Función para obtener estudiantes que se han inscrito a disponibilidades
+function getEnrolledStudents() {
+    try {
+        // Buscar inscripciones en localStorage
+        const enrollments = JSON.parse(localStorage.getItem('studentEnrollments') || '[]');
+        
+        if (enrollments.length === 0) {
+            // Si no hay inscripciones reales, simular algunas basadas en usuarios reales
+            return simulateStudentEnrollments();
+        }
+        
+        // Convertir inscripciones a formato de estudiantes
+        return enrollments.map(enrollment => ({
+            name: enrollment.studentName,
+            email: enrollment.studentEmail,
+            availabilityId: enrollment.availabilityId,
+            enrolledAt: enrollment.enrolledAt
+        }));
+        
+    } catch (error) {
+        console.error('Error obteniendo estudiantes inscritos:', error);
+        return simulateStudentEnrollments();
+    }
+}
+
+// Función para simular inscripciones de estudiantes reales
+function simulateStudentEnrollments() {
+    try {
+        // Obtener estudiantes reales de la base de datos
+        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const userData = JSON.parse(localStorage.getItem('userData') || '[]');
+        
+        // Combinar todas las fuentes
+        const allUsers = [...usuarios, ...users, ...userData];
+        
+        // Filtrar solo alumnos/estudiantes
+        const estudiantes = allUsers.filter(user => {
+            const rol = (user.rol || user.role || '').toLowerCase();
+            return rol.includes('alumno') || rol.includes('estudiante') || rol.includes('student');
+        }).slice(0, 5); // Tomar solo los primeros 5
+        
+        // Si no hay estudiantes reales, usar algunos por defecto
+        if (estudiantes.length === 0) {
+            return [
+                { name: 'María González', email: 'maria.gonzalez@email.com' },
+                { name: 'Carlos Rodríguez', email: 'carlos.rodriguez@email.com' },
+                { name: 'Ana Martínez', email: 'ana.martinez@email.com' },
+                { name: 'Luis Fernández', email: 'luis.fernandez@email.com' },
+                { name: 'Sofia Herrera', email: 'sofia.herrera@email.com' }
+            ];
+        }
+        
+        // Convertir a formato esperado
+        return estudiantes.map(estudiante => ({
+            name: estudiante.nombre_completo || 
+                  `${estudiante.nombre || ''} ${estudiante.apellido || ''}`.trim() ||
+                  estudiante.name || 
+                  estudiante.email?.split('@')[0] || 
+                  'Estudiante',
+            email: estudiante.email || `${estudiante.name || 'estudiante'}@email.com`
+        }));
+        
+    } catch (error) {
+        console.error('Error simulando inscripciones:', error);
+        return [
+            { name: 'María González', email: 'maria.gonzalez@email.com' },
+            { name: 'Carlos Rodríguez', email: 'carlos.rodriguez@email.com' }
+        ];
+    }
+}
+
+function getSampleConfirmedSessions() {
+    // Retornar siempre array vacío - sesiones confirmadas eliminadas
+    return [];
+}
+
+function getSampleRejectedSessions() {
+    const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+    
+    if (tutorAvailability.length === 0) {
+        return [];
+    }
+    
+    // Generar una sesión rechazada basada en la primera disponibilidad
+    const availability = tutorAvailability[0];
+    if (!availability) return [];
+    
+    return [{
+        id: `session_rejected_${availability.id}`,
+        studentName: 'Pedro López',
+        studentEmail: 'pedro.lopez@email.com',
+        subject: getSubjectName(availability.subject),
+        date: '2025-09-30', // Ayer (fecha fija anterior a hoy)
+        time: '06:00',
+        duration: '4hr 20min',
+        modality: getModalityName(availability.modality),
+        location: availability.modality === 'presencial' ? 'Aula 203' : 'Zoom',
+        message: 'Ayuda con este tema',
+        createdAt: new Date('2025-09-29T06:00:00').toISOString(), // 2 días atrás
+        rejectedAt: new Date('2025-09-30T06:00:00').toISOString(), // Ayer
+        reason: 'Horario no disponible'
+    }];
+}
+
+function getSampleCompletedSessions() {
+    // Retornar siempre array vacío - sesiones completadas eliminadas
+    return [];
+}
+
+// Función para eliminar COMPLETAMENTE las sesiones completadas y asignadas
+function clearAllSessionsAndRecreate() {
+    try {
+        console.log('🗑️ ELIMINANDO sesiones completadas y asignadas...');
+        
+        // Eliminar COMPLETAMENTE las sesiones completadas y asignadas
+        localStorage.removeItem('completedSessions');
+        localStorage.removeItem('confirmedSessions');
+        localStorage.removeItem('realSessions');
+        localStorage.removeItem('sessionsByTutor');
+        
+        // Mantener solo las sesiones pendientes y rechazadas
+        console.log('✅ Sesiones completadas y asignadas eliminadas completamente');
+        
+    } catch (error) {
+        console.error('Error eliminando sesiones:', error);
+    }
+}
+
+// Función para limpiar y recrear todas las sesiones con fechas correctas
+function recreateAllSessionsWithCorrectDates() {
+    try {
+        console.log('🧹 Limpiando y recreando todas las sesiones con fechas correctas...');
+        
+        // Limpiar todas las sesiones existentes
+        localStorage.removeItem('completedSessions');
+        localStorage.removeItem('rejectedSessions');
+        localStorage.removeItem('confirmedSessions');
+        localStorage.removeItem('pendingSessions');
+        localStorage.removeItem('processedSessions');
+        
+        // Crear sesiones completadas para Fridman Balam
+        createSampleCompletedSessionsForFridman();
+        
+        // Crear sesiones rechazadas de ejemplo
+        createSampleRejectedSessions();
+        
+        // Forzar la recreación de sesiones completadas con fechas correctas
+        forceRecreateCompletedSessions();
+        
+        console.log('✅ Todas las sesiones recreadas con fechas correctas');
+        
+    } catch (error) {
+        console.error('Error recreando sesiones:', error);
+    }
+}
+
+// Función para forzar la recreación de sesiones completadas con fechas correctas
+function forceRecreateCompletedSessions() {
+    try {
+        console.log('🔄 Forzando recreación de sesiones completadas...');
+        
+        // Limpiar sesiones completadas existentes
+        localStorage.removeItem('completedSessions');
+        
+        // Crear sesiones completadas con fechas SIEMPRE anteriores a hoy
+        const completedSessions = [
+            {
+                id: 'completed_isabella_001',
+                student: 'Isabella Torres',
+                studentName: 'Isabella Torres',
+                studentEmail: 'isabella.torres@email.com',
+                tutor: getCurrentTutorName(),
+                tutorName: getCurrentTutorName(),
+                subject: 'Historia',
+                date: '2025-09-30', // Ayer - SIEMPRE anterior a hoy
+                time: '07:00',
+                endTime: '10:30',
+                duration: '3hr 30min',
+                modality: 'Virtual',
+                location: 'Zoom',
+                status: 'completed',
+                createdAt: new Date('2025-09-30T07:00:00').toISOString(),
+                confirmedAt: new Date('2025-09-30T07:00:00').toISOString(),
+                completedAt: new Date('2025-09-30T10:30:00').toISOString(),
+                rating: 5,
+                feedback: 'Excelente explicación, muy clara'
+            },
+            {
+                id: 'completed_diego_001',
+                student: 'Diego Morales',
+                studentName: 'Diego Morales',
+                studentEmail: 'diego.morales@email.com',
+                tutor: getCurrentTutorName(),
+                tutorName: getCurrentTutorName(),
+                subject: 'Programación',
+                date: '2025-09-28', // 3 días atrás - SIEMPRE anterior a hoy
+                time: '06:00',
+                endTime: '07:00',
+                duration: '1hr',
+                modality: 'Presencial',
+                location: 'Aula 201',
+                status: 'completed',
+                createdAt: new Date('2025-09-28T06:00:00').toISOString(),
+                confirmedAt: new Date('2025-09-28T06:00:00').toISOString(),
+                completedAt: new Date('2025-09-28T07:00:00').toISOString(),
+                rating: 4,
+                feedback: 'Muy buena sesión, entendí los conceptos'
+            }
+        ];
+        
+        // Guardar las sesiones completadas
+        localStorage.setItem('completedSessions', JSON.stringify(completedSessions));
+        
+        console.log('✅ Sesiones completadas recreadas con fechas correctas:', completedSessions);
+        
+    } catch (error) {
+        console.error('Error recreando sesiones completadas:', error);
+    }
+}
+
+// Función para crear sesiones rechazadas de ejemplo
+function createSampleRejectedSessions() {
+    try {
+        const rejectedSessions = [
+            {
+                id: 'rejected_sample_001',
+                student: 'Pedro López',
+                studentName: 'Pedro López',
+                studentEmail: 'pedro.lopez@email.com',
+                tutor: getCurrentTutorName(),
+                tutorName: getCurrentTutorName(),
+                subject: 'Química',
+                date: '2025-09-30', // Ayer
+                time: '06:00',
+                endTime: '10:20',
+                duration: '4hr 20min',
+                modality: 'Presencial',
+                location: 'Aula 203',
+                status: 'rejected',
+                createdAt: new Date('2025-09-29T06:00:00').toISOString(),
+                rejectedAt: new Date('2025-09-30T06:00:00').toISOString(),
+                reason: 'Horario no disponible'
+            }
+        ];
+        
+        localStorage.setItem('rejectedSessions', JSON.stringify(rejectedSessions));
+        console.log('Sesiones rechazadas creadas:', rejectedSessions);
+        
+    } catch (error) {
+        console.error('Error creando sesiones rechazadas:', error);
+    }
+}
+
+// Función para crear sesiones completadas de ejemplo para Fridman Balam
+function createSampleCompletedSessionsForFridman() {
+    try {
+        console.log('Creando sesiones completadas para Fridman Balam con fechas correctas...');
+        
+        // Crear sesiones completadas de ejemplo para Fridman Balam (fechas anteriores a hoy 1/10/2025)
+        const fridmanCompletedSessions = [
+            {
+                id: 'completed_fridman_001',
+                student: 'María González',
+                studentName: 'María González',
+                studentEmail: 'maria.gonzalez@email.com',
+                tutor: 'Fridman Balam',
+                tutorName: 'Fridman Balam',
+                subject: 'Matemáticas',
+                date: '2025-09-29', // 2 días atrás
+                time: '10:00',
+                endTime: '11:00',
+                duration: '1hr',
+                modality: 'Presencial',
+                location: 'Aula 201',
+                status: 'completed',
+                createdAt: new Date('2025-09-27T10:00:00').toISOString(), // 4 días atrás
+                confirmedAt: new Date('2025-09-28T10:00:00').toISOString(), // 3 días atrás
+                completedAt: new Date('2025-09-29T11:00:00').toISOString(), // 2 días atrás
+                rating: 5,
+                feedback: 'Excelente explicación, muy clara y didáctica'
+            },
+            {
+                id: 'completed_fridman_002',
+                student: 'Carlos Rodríguez',
+                studentName: 'Carlos Rodríguez',
+                studentEmail: 'carlos.rodriguez@email.com',
+                tutor: 'Fridman Balam',
+                tutorName: 'Fridman Balam',
+                subject: 'Física',
+                date: '2025-09-27', // 4 días atrás
+                time: '14:00',
+                endTime: '15:30',
+                duration: '1hr 30min',
+                modality: 'Virtual',
+                location: 'Zoom',
+                status: 'completed',
+                createdAt: new Date('2025-09-25T14:00:00').toISOString(), // 6 días atrás
+                confirmedAt: new Date('2025-09-26T14:00:00').toISOString(), // 5 días atrás
+                completedAt: new Date('2025-09-27T15:30:00').toISOString(), // 4 días atrás
+                rating: 4,
+                feedback: 'Muy buena sesión, entendí los conceptos fundamentales'
+            },
+            {
+                id: 'completed_fridman_003',
+                student: 'Ana Martínez',
+                studentName: 'Ana Martínez',
+                studentEmail: 'ana.martinez@email.com',
+                tutor: 'Fridman Balam',
+                tutorName: 'Fridman Balam',
+                subject: 'Química',
+                date: '2025-09-25', // 6 días atrás
+                time: '16:00',
+                endTime: '17:00',
+                duration: '1hr',
+                modality: 'Presencial',
+                location: 'Laboratorio 3',
+                status: 'completed',
+                createdAt: new Date('2025-09-23T16:00:00').toISOString(), // 8 días atrás
+                confirmedAt: new Date('2025-09-24T16:00:00').toISOString(), // 7 días atrás
+                completedAt: new Date('2025-09-25T17:00:00').toISOString(), // 6 días atrás
+                rating: 5,
+                feedback: 'Increíble sesión práctica, aprendí mucho'
+            }
+        ];
+        
+        // Guardar las sesiones completadas
+        localStorage.setItem('completedSessions', JSON.stringify(fridmanCompletedSessions));
+        
+        console.log('Sesiones completadas creadas para Fridman Balam:', fridmanCompletedSessions);
+        
+    } catch (error) {
+        console.error('Error creando sesiones completadas para Fridman Balam:', error);
+    }
+}
+
+// Función para marcar una sesión como completada
+function markSessionAsCompleted(sessionId) {
+    try {
+        // Obtener la sesión confirmada
+        const confirmedSessions = JSON.parse(localStorage.getItem('confirmedSessions') || '[]');
+        const sessionIndex = confirmedSessions.findIndex(session => session.id === sessionId);
+        
+        if (sessionIndex === -1) {
+            showNotification('Sesión no encontrada', 'error');
+            return;
+        }
+        
+        const session = confirmedSessions[sessionIndex];
+        
+        // Crear sesión completada
+        const completedSession = {
+            ...session,
+            id: sessionId,
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+            tutor: getCurrentTutorName(),
+            tutorName: getCurrentTutorName()
+        };
+        
+        // Agregar a sesiones completadas
+        const completedSessions = JSON.parse(localStorage.getItem('completedSessions') || '[]');
+        completedSessions.push(completedSession);
+        localStorage.setItem('completedSessions', JSON.stringify(completedSessions));
+        
+        // Remover de sesiones confirmadas
+        confirmedSessions.splice(sessionIndex, 1);
+        localStorage.setItem('confirmedSessions', JSON.stringify(confirmedSessions));
+        
+        showNotification('Sesión marcada como completada', 'success');
+        
+        // Recargar sesiones
+        loadConfirmedSessions();
+        loadCompletedSessions();
+        
+    } catch (error) {
+        console.error('Error marcando sesión como completada:', error);
+        showNotification('Error al marcar sesión como completada', 'error');
+    }
+}
 
 // Exportar funciones para uso global
 window.TutorInterface = {

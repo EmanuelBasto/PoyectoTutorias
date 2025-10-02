@@ -173,50 +173,199 @@ body {
     color: #7f0222;
 }
         /* Extra para responsividad */
-        @media (max-width: 768px) {
-            .login-container {
-                flex-direction: column;
-                width: 95%;
-                height: auto;
-            }
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .login-container {
+        width: 800px;
+        height: 480px;
+    }
+    
+    .panel-izquierdo h1 {
+        font-size: 24px;
+    }
+    
+    .panel-izquierdo p {
+        font-size: 14px;
+    }
+}
 
-            .panel-izquierdo, .panel-derecho {
-                flex: none;
-                width: 100%;
-                padding: 20px;
-                height: auto;
-            }
+@media (max-width: 992px) {
+    .login-container {
+        width: 700px;
+        height: 450px;
+    }
+    
+    .panel-izquierdo {
+        padding: 25px;
+    }
+    
+    .panel-derecho {
+        padding: 25px;
+    }
+    
+    .panel-izquierdo h1 {
+        font-size: 22px;
+    }
+    
+    .login-box h2 {
+        font-size: 22px;
+    }
+}
 
-            .panel-izquierdo {
-                text-align: center;
-            }
+@media (max-width: 768px) {
+    body {
+        padding: 20px;
+        align-items: flex-start;
+        padding-top: 50px;
+    }
+    
+    .login-container {
+        flex-direction: column;
+        width: 100%;
+        max-width: 500px;
+        height: auto;
+        margin: 0 auto;
+    }
 
-            .panel-izquierdo img {
-                width: 90px;
-                margin-bottom: 15px;
-            }
+    .panel-izquierdo, .panel-derecho {
+        flex: none;
+        width: 100%;
+        padding: 30px 20px;
+        height: auto;
+    }
 
-            .login-box {
-                width: 100%;
-                max-width: 100%;
-            }
-        }
+    .panel-izquierdo {
+        text-align: center;
+        order: 2;
+    }
 
-        @media (max-width: 480px) {
-            .login-box h2 {
-                font-size: 20px;
-            }
+    .panel-derecho {
+        order: 1;
+    }
 
-            .input-group input {
-                padding: 8px;
-                font-size: 14px;
-            }
+    .panel-izquierdo img {
+        width: 100px;
+        margin-bottom: 15px;
+    }
+    
+    .panel-izquierdo h1 {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+    
+    .panel-izquierdo p {
+        font-size: 13px;
+    }
 
-            .login-btn {
-                padding: 10px;
-                font-size: 14px;
-            }
-        }
+    .login-box {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .login-box h2 {
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .input-group {
+        margin-bottom: 15px;
+    }
+    
+    .input-group input {
+        padding: 12px;
+        font-size: 15px;
+    }
+    
+    .login-btn {
+        padding: 12px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+        padding-top: 30px;
+    }
+    
+    .login-container {
+        width: 100%;
+        border-radius: 12px;
+    }
+    
+    .panel-izquierdo, .panel-derecho {
+        padding: 20px 15px;
+    }
+    
+    .panel-izquierdo img {
+        width: 80px;
+        margin-bottom: 10px;
+    }
+    
+    .panel-izquierdo h1 {
+        font-size: 18px;
+        margin-bottom: 6px;
+    }
+    
+    .panel-izquierdo p {
+        font-size: 12px;
+    }
+
+    .login-box h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+
+    .input-group input {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .login-btn {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .login-box p {
+        font-size: 12px;
+    }
+    
+    .login-box a {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 360px) {
+    .panel-izquierdo, .panel-derecho {
+        padding: 15px 10px;
+    }
+    
+    .panel-izquierdo img {
+        width: 70px;
+    }
+    
+    .panel-izquierdo h1 {
+        font-size: 16px;
+    }
+    
+    .panel-izquierdo p {
+        font-size: 11px;
+    }
+    
+    .login-box h2 {
+        font-size: 16px;
+    }
+    
+    .input-group input {
+        padding: 8px;
+        font-size: 13px;
+    }
+    
+    .login-btn {
+        padding: 8px;
+        font-size: 13px;
+    }
+}
 .panel-izquierdo img {
   max-width: 260px;
   opacity: 0.95;

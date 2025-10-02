@@ -1980,6 +1980,79 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 1200px) {
+    .container {
+        grid-template-columns: 200px 1fr;
+    }
+    
+    .sidebar {
+        width: 200px;
+    }
+    
+    .nav-link {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .nav-link i {
+        font-size: 1rem;
+    }
+    
+    .dashboard-cards {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    
+    .students-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .container {
+        grid-template-columns: 180px 1fr;
+    }
+    
+    .sidebar {
+        width: 180px;
+    }
+    
+    .nav-link {
+        padding: 0.7rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .main-content {
+        padding: 1.5rem;
+    }
+    
+    .content-header h2 {
+        font-size: 1.8rem;
+    }
+    
+    .dashboard-cards {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+    
+    .card {
+        padding: 1.5rem;
+    }
+    
+    .card-content h3 {
+        font-size: 1.8rem;
+    }
+    
+    .sessions-tabs {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .tab-btn {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
 @media (max-width: 768px) {
     .mobile-menu-toggle {
         display: block;
@@ -2054,6 +2127,9 @@ body {
     
     .card {
         padding: 1rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
     }
     
     .card-content h3 {
@@ -2062,14 +2138,17 @@ body {
     
     .schedule-actions {
         flex-direction: column;
+        gap: 0.5rem;
     }
     
     .sessions-tabs {
         flex-direction: column;
+        gap: 0.25rem;
     }
     
     .tab-btn {
         text-align: center;
+        padding: 0.8rem;
     }
     
     .students-grid {
@@ -2092,6 +2171,12 @@ body {
         justify-content: center;
         flex-direction: row;
         flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .session-actions .btn {
+        flex: 1;
+        min-width: 120px;
     }
     
     .modal-content {
@@ -2110,11 +2195,57 @@ body {
     
     .form-actions {
         flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
     }
     
     .btn {
         padding: 0.5rem 1rem;
         font-size: 0.8rem;
+    }
+    
+    .availability-item,
+    .block-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .availability-actions,
+    .block-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .availability-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .availability-details {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+    
+    .rating-breakdown {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .notification-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .notification-actions {
+        width: 100%;
+        flex-direction: row;
+        justify-content: center;
     }
 }
 
@@ -2216,4 +2347,48 @@ body {
 
 .modal-notification.info {
     background: #17a2b8;
+}
+
+/* Estilos para campo de duración de solo lectura */
+.form-group input[readonly] {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+    border: 1px solid #dee2e6;
+}
+
+.form-group input[readonly]:focus {
+    border-color: #dee2e6;
+    box-shadow: none;
+}
+
+/* Estilos para modal de rechazo */
+#rejectionModal .modal-content {
+    max-width: 500px;
+}
+
+#rejectionModal .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 80px;
+}
+
+#rejectionModal .form-group textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+#rejectionModal .modal-body p {
+    margin: 8px 0;
+    color: #333;
+}
+
+#rejectionModal .modal-body strong {
+    color: #7f0222;
 }

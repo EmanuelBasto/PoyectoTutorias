@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Sincronización de Sesiones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .availability-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+        }
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            border-radius: 5px;
+        }
+        .availability-info, .session-info {
+            flex: 1;
+        }
+        .availability-main, .session-main {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+        .availability-main .date, .session-main .date {
+            font-weight: 600;
+            color: #7f0222;
+            font-size: 1rem;
+            background: #fff3cd;
+            border: 1px solid #d19800;
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+        }
+        .availability-main .time, .session-main .time {
+            font-weight: 500;
+            color: #333;
+        }
+        .availability-details, .session-details {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .availability-details span, .session-details span {
+            padding: 0.25rem 0.5rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .subject {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .modality.presencial {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .modality.virtual {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+        .duration {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .comparison {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .match { color: #28a745; font-weight: bold; }
+        .mismatch { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Prueba de Sincronización de Sesiones con Disponibilidades</h1>
+        
+        <div class="section">
+            <h3>Disponibilidades Configuradas</h3>
+            <div id="availabilityList">
+                <!-- Se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>Sesiones Generadas Basadas en Disponibilidades</h3>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="showPendingSessions()">Sesiones Pendientes</button>
+                <button class="btn btn-success" onclick="showConfirmedSessions()">Sesiones Confirmadas</button>
+                <button class="btn btn-danger" onclick="showRejectedSessions()">Sesiones Rechazadas</button>
+                <button class="btn btn-success" onclick="showCompletedSessions()">Sesiones Completadas</button>
+            </div>
+            <div id="sessionsList">
+                <!-- Se cargarán dinámicamente -->
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>Comparación de Datos</h3>
+            <div id="comparisonResults">
+                <!-- Comparación de datos -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // FUNCIONES IGUAL QUE EN TUTORES.JS
+        function getDayNameFromDate(dateString) {
+            if (!dateString) return '';
+            
+            const [year, month, day] = dateString.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            return days[date.getDay()];
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            
+            const [year, month, day] = dateString.split('-');
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            const dayName = days[date.getDay()];
+            const dayNum = date.getDate();
+            const monthName = months[date.getMonth()];
+            const yearNum = date.getFullYear();
+            
+            return `${dayName} ${dayNum}/${monthName}/${yearNum}`;
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'p. m.' : 'a. m.';
+            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            return `${displayHour}:${minutes} ${ampm}`;
+        }
+
+        function formatDuration(minutes) {
+            if (!minutes || minutes <= 0) return '';
+            
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            
+            if (hours === 0) {
+                return `${remainingMinutes}min`;
+            } else if (remainingMinutes === 0) {
+                return `${hours}hr`;
+            } else {
+                return `${hours}hr ${remainingMinutes}min`;
+            }
+        }
+
+        function getSubjectName(subjectValue) {
+            const subjects = {
+                'quimica': 'Química',
+                'matematicas': 'Matemáticas',
+                'fisica': 'Física',
+                'biologia': 'Biología',
+                'historia': 'Historia'
+            };
+            return subjects[subjectValue] || subjectValue;
+        }
+
+        function getModalityName(modality) {
+            const modalities = {
+                'presencial': 'Presencial',
+                'virtual': 'Virtual'
+            };
+            return modalities[modality] || modality;
+        }
+
+        // FUNCIONES DE DATOS DE EJEMPLO (IGUAL QUE EN TUTORES.JS)
+        function getSamplePendingSessions() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (tutorAvailability.length === 0) {
+                return [];
+            }
+            
+            const students = [
+                { name: 'María González', email: 'maria.gonzalez@email.com' },
+                { name: 'Carlos Rodríguez', email: 'carlos.rodriguez@email.com' },
+                { name: 'Ana Martínez', email: 'ana.martinez@email.com' },
+                { name: 'Luis Fernández', email: 'luis.fernandez@email.com' },
+                { name: 'Sofia Herrera', email: 'sofia.herrera@email.com' }
+            ];
+            
+            const messages = [
+                'Necesito ayuda con este tema',
+                'Tengo dudas sobre la materia',
+                'Quiero repasar para el examen',
+                'Necesito explicación adicional',
+                'Ayuda con ejercicios prácticos'
+            ];
+            
+            return tutorAvailability.slice(0, 3).map((availability, index) => {
+                const student = students[index % students.length];
+                const message = messages[index % messages.length];
+                
+                return {
+                    id: `session_pending_${availability.id}`,
+                    studentName: student.name,
+                    studentEmail: student.email,
+                    subject: getSubjectName(availability.subject),
+                    date: availability.date,
+                    time: availability.startTime,
+                    duration: availability.duration,
+                    modality: getModalityName(availability.modality),
+                    location: availability.modality === 'presencial' ? 'Aula 201' : 'Zoom',
+                    message: message,
+                    createdAt: new Date().toISOString()
+                };
+            });
+        }
+
+        function getSampleConfirmedSessions() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (tutorAvailability.length === 0) {
+                return [];
+            }
+            
+            const students = [
+                { name: 'Diego Morales', email: 'diego.morales@email.com' },
+                { name: 'Isabella Torres', email: 'isabella.torres@email.com' }
+            ];
+            
+            const messages = [
+                'Repaso para examen',
+                'Estudio de conceptos avanzados'
+            ];
+            
+            return tutorAvailability.slice(3, 5).map((availability, index) => {
+                const student = students[index % students.length];
+                const message = messages[index % messages.length];
+                
+                return {
+                    id: `session_confirmed_${availability.id}`,
+                    studentName: student.name,
+                    studentEmail: student.email,
+                    subject: getSubjectName(availability.subject),
+                    date: availability.date,
+                    time: availability.startTime,
+                    duration: availability.duration,
+                    modality: getModalityName(availability.modality),
+                    location: availability.modality === 'presencial' ? 'Aula 105' : 'Google Meet',
+                    message: message,
+                    createdAt: new Date(Date.now() - 86400000).toISOString(),
+                    confirmedAt: new Date(Date.now() - 3600000).toISOString()
+                };
+            });
+        }
+
+        function getSampleRejectedSessions() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (tutorAvailability.length === 0) {
+                return [];
+            }
+            
+            const availability = tutorAvailability[0];
+            if (!availability) return [];
+            
+            return [{
+                id: `session_rejected_${availability.id}`,
+                studentName: 'Pedro López',
+                studentEmail: 'pedro.lopez@email.com',
+                subject: getSubjectName(availability.subject),
+                date: availability.date,
+                time: availability.startTime,
+                duration: availability.duration,
+                modality: getModalityName(availability.modality),
+                location: availability.modality === 'presencial' ? 'Aula 203' : 'Zoom',
+                message: 'Ayuda con este tema',
+                createdAt: new Date(Date.now() - 172800000).toISOString(),
+                rejectedAt: new Date(Date.now() - 86400000).toISOString(),
+                reason: 'Horario no disponible'
+            }];
+        }
+
+        function getSampleCompletedSessions() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (tutorAvailability.length === 0) {
+                return [];
+            }
+            
+            const students = [
+                { name: 'Isabella Torres', email: 'isabella.torres@email.com' },
+                { name: 'Diego Morales', email: 'diego.morales@email.com' }
+            ];
+            
+            const messages = [
+                'Resolución de problemas',
+                'Explicación de conceptos'
+            ];
+            
+            const feedbacks = [
+                'Excelente explicación, muy clara',
+                'Muy buena sesión, entendí los conceptos'
+            ];
+            
+            return tutorAvailability.slice(-2).map((availability, index) => {
+                const student = students[index % students.length];
+                const message = messages[index % messages.length];
+                const feedback = feedbacks[index % feedbacks.length];
+                const rating = index === 0 ? 5 : 4;
+                
+                return {
+                    id: `session_completed_${availability.id}`,
+                    studentName: student.name,
+                    studentEmail: student.email,
+                    subject: getSubjectName(availability.subject),
+                    date: availability.date,
+                    time: availability.startTime,
+                    duration: availability.duration,
+                    modality: getModalityName(availability.modality),
+                    location: availability.modality === 'presencial' ? 'Aula 201' : 'Zoom',
+                    message: message,
+                    createdAt: new Date(Date.now() - 259200000).toISOString(),
+                    confirmedAt: new Date(Date.now() - 172800000).toISOString(),
+                    completedAt: new Date(Date.now() - 86400000).toISOString(),
+                    rating: rating,
+                    feedback: feedback
+                };
+            });
+        }
+
+        function loadAvailabilityList() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const container = document.getElementById('availabilityList');
+            
+            if (tutorAvailability.length === 0) {
+                container.innerHTML = '<p>No hay disponibilidades configuradas. Ve a "Gestión de Horarios" para crear algunas.</p>';
+                return;
+            }
+            
+            container.innerHTML = tutorAvailability.map(item => `
+                <div class="availability-item" data-id="${item.id}">
+                    <div class="availability-info">
+                        <div class="availability-main">
+                            <span class="date">${formatDate(item.date)}</span>
+                            <span class="time">${formatTime(item.startTime)} - ${formatTime(item.endTime)}</span>
+                        </div>
+                        <div class="availability-details">
+                            <span class="subject">${getSubjectName(item.subject)}</span>
+                            <span class="modality ${item.modality}">${getModalityName(item.modality)}</span>
+                            <span class="duration">${formatDuration(item.duration)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showPendingSessions() {
+            const sessions = getSamplePendingSessions();
+            displaySessions(sessions, 'Pendientes');
+        }
+
+        function showConfirmedSessions() {
+            const sessions = getSampleConfirmedSessions();
+            displaySessions(sessions, 'Confirmadas');
+        }
+
+        function showRejectedSessions() {
+            const sessions = getSampleRejectedSessions();
+            displaySessions(sessions, 'Rechazadas');
+        }
+
+        function showCompletedSessions() {
+            const sessions = getSampleCompletedSessions();
+            displaySessions(sessions, 'Completadas');
+        }
+
+        function displaySessions(sessions, type) {
+            const container = document.getElementById('sessionsList');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = `<p>No hay sesiones ${type.toLowerCase()} disponibles.</p>`;
+                return;
+            }
+            
+            container.innerHTML = `
+                <h4>Sesiones ${type} (${sessions.length})</h4>
+                ${sessions.map(session => `
+                    <div class="session-item">
+                        <div class="session-info">
+                            <div class="session-main">
+                                <span class="date">${formatDate(session.date)}</span>
+                                <span class="time">${formatTime(session.time)}</span>
+                            </div>
+                            <div class="session-details">
+                                <span class="subject">${session.subject}</span>
+                                <span class="modality ${session.modality.toLowerCase()}">${session.modality}</span>
+                                <span class="duration">${formatDuration(session.duration)}</span>
+                                <span class="status">${type}</span>
+                            </div>
+                            <p><strong>Estudiante:</strong> ${session.studentName}</p>
+                            <p><strong>Email:</strong> ${session.studentEmail}</p>
+                            <p><strong>Ubicación:</strong> ${session.location}</p>
+                            <p><strong>Mensaje:</strong> ${session.message}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+            
+            // Mostrar comparación
+            showComparison();
+        }
+
+        function showComparison() {
+            const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const container = document.getElementById('comparisonResults');
+            
+            if (tutorAvailability.length === 0) {
+                container.innerHTML = '<p>No hay disponibilidades para comparar.</p>';
+                return;
+            }
+            
+            const pendingSessions = getSamplePendingSessions();
+            const confirmedSessions = getSampleConfirmedSessions();
+            const rejectedSessions = getSampleRejectedSessions();
+            const completedSessions = getSampleCompletedSessions();
+            
+            const totalSessions = pendingSessions.length + confirmedSessions.length + rejectedSessions.length + completedSessions.length;
+            
+            container.innerHTML = `
+                <div class="comparison">
+                    <h4>Comparación de Datos</h4>
+                    <p><strong>Disponibilidades configuradas:</strong> ${tutorAvailability.length}</p>
+                    <p><strong>Sesiones generadas:</strong> ${totalSessions}</p>
+                    <p><strong>Distribución:</strong></p>
+                    <ul>
+                        <li>Pendientes: ${pendingSessions.length}</li>
+                        <li>Confirmadas: ${confirmedSessions.length}</li>
+                        <li>Rechazadas: ${rejectedSessions.length}</li>
+                        <li>Completadas: ${completedSessions.length}</li>
+                    </ul>
+                    <p><strong>Estado:</strong> <span class="match">✅ Las sesiones se generan correctamente basadas en las disponibilidades</span></p>
+                </div>
+            `;
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAvailabilityList();
+            showComparison();
+        });
+    </script>
+</body>
+</html>

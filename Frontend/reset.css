@@ -116,6 +116,135 @@ input {
           mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.86 21.86 0 0 1 5.06-6.94"/><path d="M1 1l22 22"/><path d="M9.88 9.88a3 3 0 0 0 4.24 4.24"/></svg>') no-repeat center/22px 22px;
 }
 
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .form-container {
+    max-width: 350px;
+    padding: 25px;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .form-container {
+    max-width: 320px;
+    padding: 20px;
+  }
+  
+  h2 {
+    font-size: 1.4rem;
+  }
+  
+  input {
+    padding: 10px;
+  }
+  
+  .btn {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 20px;
+    align-items: flex-start;
+    padding-top: 50px;
+  }
+  
+  .form-container {
+    max-width: 100%;
+    padding: 25px;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+  
+  .input-group {
+    margin-bottom: 15px;
+  }
+  
+  input {
+    padding: 12px;
+    font-size: 15px;
+  }
+  
+  .btn {
+    padding: 12px;
+    font-size: 15px;
+  }
+  
+  p {
+    font-size: 13px;
+  }
+  
+  a {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+    padding-top: 30px;
+  }
+  
+  .form-container {
+    padding: 20px;
+  }
+  
+  h2 {
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+  }
+  
+  .input-group {
+    margin-bottom: 12px;
+  }
+  
+  input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .btn {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  p {
+    font-size: 12px;
+  }
+  
+  a {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .form-container {
+    padding: 15px;
+  }
+  
+  h2 {
+    font-size: 1.1rem;
+  }
+  
+  input {
+    padding: 8px;
+    font-size: 13px;
+  }
+  
+  .btn {
+    padding: 8px;
+    font-size: 13px;
+  }
+}
+
 
 
 
