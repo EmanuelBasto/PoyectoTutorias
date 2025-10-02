@@ -171,68 +171,52 @@
 
         <div class="search-filters">
             <div class="filter-group">
-                <label>Área de Apoyo</label>
-                <select id="areaFilter">
-                    <option value="">Todas las áreas</option>
+                <label>Fecha *</label>
+                <input type="date" id="dateFilter" required>
+            </div>
+            <div class="filter-group">
+                <label>Materia *</label>
+                <select id="subjectFilter" required>
+                    <option value="">Seleccionar materia</option>
                     <option value="matematicas">Matemáticas</option>
-                    <option value="ciencias">Ciencias</option>
-                    <option value="lenguaje">Lenguaje</option>
-                    <option value="general">Apoyo General</option>
+                    <option value="fisica">Física</option>
+                    <option value="quimica">Química</option>
+                    <option value="biologia">Biología</option>
+                    <option value="espanol">Español</option>
+                    <option value="historia">Historia</option>
+                    <option value="geografia">Geografía</option>
+                    <option value="ingles">Inglés</option>
+                    <option value="filosofia">Filosofía</option>
+                    <option value="literatura">Literatura</option>
+                    <option value="programacion">Programación</option>
+                    <option value="estadistica">Estadística</option>
+                    <option value="calculo">Cálculo</option>
+                    <option value="algebra">Álgebra</option>
+                    <option value="otra">Otra</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label>Modalidad</label>
-                <select id="modalityFilter">
-                    <option value="">Todas las modalidades</option>
-                    <option value="presencial">Presencial</option>
-                    <option value="virtual">Virtual</option>
-                    <option value="both">Ambas</option>
+                <label>Hora de Inicio *</label>
+                <input type="time" id="startTimeFilter" required>
+            </div>
+            <div class="filter-group">
+                <label>Hora de Fin *</label>
+                <input type="time" id="endTimeFilter" required>
+            </div>
+            <div class="filter-group">
+                <label>Modalidad *</label>
+                <select id="modalityFilter" required>
+                    <option value="">Seleccionar modalidad</option>
+                    <option value="Presencial">Presencial</option>
+                    <option value="Virtual">Virtual</option>
                 </select>
             </div>
             <div class="filter-group">
-                <label>Día de la Semana</label>
-                <select id="dayFilter">
-                    <option value="">Cualquier día</option>
-                    <option value="monday">Lunes</option>
-                    <option value="tuesday">Martes</option>
-                    <option value="wednesday">Miércoles</option>
-                    <option value="thursday">Jueves</option>
-                    <option value="friday">Viernes</option>
-                    <option value="saturday">Sábado</option>
-                    <option value="sunday">Domingo</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Hora Preferida</label>
-                <select id="timeFilter">
-                    <option value="">Cualquier hora</option>
-                    <option value="08:00">08:00 AM</option>
-                    <option value="09:00">09:00 AM</option>
-                    <option value="10:00">10:00 AM</option>
-                    <option value="11:00">11:00 AM</option>
-                    <option value="12:00">12:00 PM</option>
-                    <option value="13:00">01:00 PM</option>
-                    <option value="14:00">02:00 PM</option>
-                    <option value="15:00">03:00 PM</option>
-                    <option value="16:00">04:00 PM</option>
-                    <option value="17:00">05:00 PM</option>
-                    <option value="18:00">06:00 PM</option>
-                    <option value="19:00">07:00 PM</option>
-                    <option value="20:00">08:00 PM</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Duración</label>
-                <select id="durationFilter">
-                    <option value="">Cualquier duración</option>
-                    <option value="30">30 minutos</option>
-                    <option value="45">45 minutos</option>
-                    <option value="60">60 minutos</option>
-                    <option value="90">90 minutos</option>
-                </select>
+                <label>Duración de Sesión</label>
+                <input type="text" id="durationFilter" readonly placeholder="Se calculará automáticamente">
             </div>
             <button class="btn btn-primary" onclick="searchTutors()">
-                <i class="fas fa-search"></i> Buscar Tutores
+                <i class="fas fa-search"></i> Buscar Tutores Disponibles
             </button>
         </div>
 

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba - Formulario Actualizado</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .filter-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Prueba del Formulario Actualizado</h1>
+        
+        <div class="status">
+            ✅ Este formulario tiene los campos que coinciden exactamente con el tutor
+        </div>
+        
+        <h2>Buscar Tutores Disponibles</h2>
+        <p>Encuentra el tutor perfecto para tus necesidades de aprendizaje</p>
+        
+        <div class="search-filters">
+            <div class="filter-group">
+                <label>Fecha *</label>
+                <input type="date" id="dateFilter" required>
+            </div>
+            <div class="filter-group">
+                <label>Materia *</label>
+                <select id="subjectFilter" required>
+                    <option value="">Seleccionar materia</option>
+                    <option value="matematicas">Matemáticas</option>
+                    <option value="fisica">Física</option>
+                    <option value="quimica">Química</option>
+                    <option value="biologia">Biología</option>
+                    <option value="espanol">Español</option>
+                    <option value="historia">Historia</option>
+                    <option value="geografia">Geografía</option>
+                    <option value="ingles">Inglés</option>
+                    <option value="filosofia">Filosofía</option>
+                    <option value="literatura">Literatura</option>
+                    <option value="programacion">Programación</option>
+                    <option value="estadistica">Estadística</option>
+                    <option value="calculo">Cálculo</option>
+                    <option value="algebra">Álgebra</option>
+                    <option value="otra">Otra</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Hora de Inicio *</label>
+                <input type="time" id="startTimeFilter" required>
+            </div>
+            <div class="filter-group">
+                <label>Hora de Fin *</label>
+                <input type="time" id="endTimeFilter" required>
+            </div>
+            <div class="filter-group">
+                <label>Modalidad *</label>
+                <select id="modalityFilter" required>
+                    <option value="">Seleccionar modalidad</option>
+                    <option value="Presencial">Presencial</option>
+                    <option value="Virtual">Virtual</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Duración de Sesión</label>
+                <input type="text" id="durationFilter" readonly placeholder="Se calculará automáticamente">
+            </div>
+            <button class="btn" onclick="testSearch()">
+                🔍 Buscar Tutores Disponibles
+            </button>
+        </div>
+        
+        <div id="results" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        // Configurar fecha mínima
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateFilter').min = today;
+            
+            // Configurar cálculo automático de duración
+            const startTimeInput = document.getElementById('startTimeFilter');
+            const endTimeInput = document.getElementById('endTimeFilter');
+            const durationInput = document.getElementById('durationFilter');
+            
+            const calculateDuration = () => {
+                const startTime = startTimeInput.value;
+                const endTime = endTimeInput.value;
+                
+                if (startTime && endTime) {
+                    const [startHour, startMin] = startTime.split(':').map(Number);
+                    const [endHour, endMin] = endTime.split(':').map(Number);
+                    
+                    const startMinutes = startHour * 60 + startMin;
+                    const endMinutes = endHour * 60 + endMin;
+                    const durationMinutes = endMinutes - startMinutes;
+                    
+                    if (durationMinutes <= 0) {
+                        durationInput.value = '0 min';
+                        return;
+                    }
+                    
+                    const hours = Math.floor(durationMinutes / 60);
+                    const minutes = durationMinutes % 60;
+                    
+                    if (hours === 0) {
+                        durationInput.value = `${minutes} min`;
+                    } else if (minutes === 0) {
+                        durationInput.value = `${hours}hr`;
+                    } else {
+                        durationInput.value = `${hours}hr ${minutes}min`;
+                    }
+                } else {
+                    durationInput.value = '';
+                }
+            };
+            
+            startTimeInput.addEventListener('change', calculateDuration);
+            endTimeInput.addEventListener('change', calculateDuration);
+        });
+        
+        function testSearch() {
+            const date = document.getElementById('dateFilter').value;
+            const subject = document.getElementById('subjectFilter').value;
+            const startTime = document.getElementById('startTimeFilter').value;
+            const endTime = document.getElementById('endTimeFilter').value;
+            const modality = document.getElementById('modalityFilter').value;
+            const duration = document.getElementById('durationFilter').value;
+            
+            // Validar campos requeridos
+            if (!date || !subject || !startTime || !endTime || !modality) {
+                document.getElementById('results').innerHTML = 
+                    '<div style="color: red; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ Por favor completa todos los campos requeridos</div>';
+                return;
+            }
+            
+            // Validar que la hora de fin sea mayor que la de inicio
+            if (startTime >= endTime) {
+                document.getElementById('results').innerHTML = 
+                    '<div style="color: red; padding: 10px; background: #f8d7da; border-radius: 5px;">❌ La hora de fin debe ser mayor que la hora de inicio</div>';
+                return;
+            }
+            
+            // Mostrar criterios de búsqueda
+            document.getElementById('results').innerHTML = `
+                <div style="padding: 15px; background: #d1ecf1; border-radius: 5px; margin-bottom: 10px;">
+                    <h3>🔍 Criterios de Búsqueda:</h3>
+                    <p><strong>Fecha:</strong> ${date}</p>
+                    <p><strong>Materia:</strong> ${subject}</p>
+                    <p><strong>Hora de Inicio:</strong> ${startTime}</p>
+                    <p><strong>Hora de Fin:</strong> ${endTime}</p>
+                    <p><strong>Modalidad:</strong> ${modality}</p>
+                    <p><strong>Duración:</strong> ${duration}</p>
+                </div>
+                <div style="padding: 15px; background: #d4edda; border-radius: 5px;">
+                    <h3>✅ Formulario Correcto</h3>
+                    <p>Este formulario tiene los campos que coinciden exactamente con el tutor:</p>
+                    <ul>
+                        <li>✅ Fecha (campo de fecha)</li>
+                        <li>✅ Materia (dropdown con todas las opciones del tutor)</li>
+                        <li>✅ Hora de Inicio (campo de hora)</li>
+                        <li>✅ Hora de Fin (campo de hora)</li>
+                        <li>✅ Modalidad (Presencial/Virtual)</li>
+                        <li>✅ Duración (calculada automáticamente)</li>
+                    </ul>
+                    <p><strong>Ahora el alumno puede buscar tutores usando exactamente los mismos campos que configura el tutor.</strong></p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+

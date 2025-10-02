@@ -70,6 +70,73 @@ function getInitials(name) {
     return name.split(' ').map(word => word[0]).join('').toUpperCase();
 }
 
+// Función para obtener datos del tutor logueado
+function getCurrentTutorData() {
+    try {
+        // Intentar obtener datos de diferentes fuentes
+        const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+        
+        // Buscar el tutor actual en diferentes formatos
+        let currentTutor = null;
+        
+        // Formato 1: userSession
+        if (userSession.usuario) {
+            currentTutor = {
+                id: userSession.usuario.id || userSession.usuario.userId,
+                nombreCompleto: userSession.usuario.nombre_completo || userSession.usuario.fullName,
+                name: userSession.usuario.nombre_completo || userSession.usuario.fullName,
+                email: userSession.usuario.email,
+                rol: userSession.usuario.rol || 'Tutor'
+            };
+        }
+        
+        // Formato 2: userData
+        if (!currentTutor && userData.id) {
+            currentTutor = {
+                id: userData.id,
+                nombreCompleto: userData.nombreCompleto || userData.fullName,
+                name: userData.nombreCompleto || userData.fullName,
+                email: userData.email,
+                rol: userData.rol || 'Tutor'
+            };
+        }
+        
+        // Formato 3: buscar en usuarios por email
+        if (!currentTutor) {
+            const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail');
+            if (userEmail) {
+                currentTutor = usuarios.find(user => user.email === userEmail && (user.rol === 'Tutor' || user.rol === 'tutor'));
+            }
+        }
+        
+        // Si no se encuentra, crear datos por defecto
+        if (!currentTutor) {
+            currentTutor = {
+                id: 'tutor_' + Date.now(),
+                nombreCompleto: 'Tutor Usuario',
+                name: 'Tutor Usuario',
+                email: 'tutor@email.com',
+                rol: 'Tutor'
+            };
+        }
+        
+        console.log('📋 Datos del tutor logueado:', currentTutor);
+        return currentTutor;
+        
+    } catch (error) {
+        console.error('❌ Error obteniendo datos del tutor:', error);
+        return {
+            id: 'tutor_' + Date.now(),
+            nombreCompleto: 'Tutor Usuario',
+            name: 'Tutor Usuario',
+            email: 'tutor@email.com',
+            rol: 'Tutor'
+        };
+    }
+}
+
 function setupDateRestrictions() {
     const today = new Date().toISOString().split('T')[0];
     const dateInputs = document.querySelectorAll('input[type="date"]');
@@ -131,6 +198,9 @@ function showSectionContent(section) {
             break;
         case 'sesiones':
             loadSesionesSection();
+            break;
+        case 'nueva-clase':
+            loadNewClassSection();
             break;
         case 'estudiantes':
             loadEstudiantesSection();
@@ -1115,9 +1185,15 @@ function saveSimpleSchedule() {
         }
     }
     
-    // Crear objeto de disponibilidad
+    // Obtener datos del tutor logueado
+    const currentTutor = getCurrentTutorData();
+    
+    // Crear objeto de disponibilidad con datos reales del tutor
     const availability = {
         id: editId || `avail_${Date.now()}`,
+        tutor: currentTutor.nombreCompleto || currentTutor.name || 'Tutor Usuario',
+        tutorId: currentTutor.id || 'tutor_' + Date.now(),
+        tutorEmail: currentTutor.email || '',
         date: date, // Usar la fecha directamente del input (formato YYYY-MM-DD)
         day: getDayNameFromDate(date),
         subject: subject,
@@ -1186,6 +1262,9 @@ function saveSimpleSchedule() {
         }
         
         localStorage.setItem('tutorAvailability', JSON.stringify(tutorAvailability));
+        
+        // Notificar a estudiantes sobre cambios en disponibilidad
+        notifyStudentsAboutAvailabilityChange(availability, editId ? 'updated' : 'created');
         
         // Simular notificación a estudiantes
         const studentNotifications = JSON.parse(localStorage.getItem('studentNotifications') || '[]');
@@ -2031,74 +2110,75 @@ function validateAvailabilityConflict(newAvailability) {
 // GESTIÓN DE SOLICITUDES (RF-11, RF-12, RF-13)
 // ===============================================
 
-function acceptRequest(requestId) {
+async function acceptRequest(requestId) {
     const confirmAccept = confirm('¿Estás seguro de que quieres aceptar esta solicitud?');
     if (confirmAccept) {
         console.log('Aceptando solicitud:', requestId);
         
-        // Actualizar estado de la solicitud
-        updateRequestStatus(requestId, 'accepted');
-        
-        // Actualizar estado en el calendario del estudiante usando BackendAPI
-        if (typeof BackendAPI !== 'undefined') {
-            BackendAPI.syncSessionStatus(requestId, 'accepted', 'tutor', 'tutor')
-                .then(() => {
-                    console.log('Estado sincronizado con el estudiante');
-                })
-                .catch(error => {
-                    console.error('Error sincronizando estado:', error);
+        try {
+            // Usar la API del backend para cambiar el estado de la sesión
+            if (typeof BackendAPI !== 'undefined' && BackendAPI.cambiarEstadoSesion) {
+                await BackendAPI.cambiarEstadoSesion(requestId, 'aceptada', {
+                    fecha_aceptacion: new Date().toISOString(),
+                    tutor_id: getCurrentTutorData()?.id
                 });
-        } else {
-            // Fallback: usar función local
-            updateStudentCalendarStatus(requestId, 'accepted');
+                
+                showNotification('Solicitud aceptada exitosamente', 'success');
+                
+                // Recargar las sesiones del tutor
+                loadPendingSessions();
+                loadConfirmedSessions();
+                
+            } else {
+                // Fallback: actualizar solo localStorage
+                updateRequestStatus(requestId, 'accepted');
+                updatePendingRequestsCounter(-1);
+                removeRequestFromList(requestId);
+                showNotification('Solicitud aceptada exitosamente', 'success');
+                loadPendingSessions();
+            }
+            
+        } catch (error) {
+            console.error('Error aceptando solicitud:', error);
+            showNotification('Error al aceptar la solicitud. Inténtalo de nuevo.', 'error');
         }
-        
-        // Enviar notificación al estudiante (RF-15)
-        sendNotificationToStudent(requestId, 'accepted');
-        
-        // Actualizar contador de solicitudes pendientes
-        updatePendingRequestsCounter(-1);
-        
-        showNotification('Solicitud aceptada exitosamente', 'success');
-        
-        // Remover la solicitud de la lista
-        removeRequestFromList(requestId);
     }
 }
 
-function rejectRequest(requestId) {
+async function rejectRequest(requestId) {
     const reason = prompt('Motivo del rechazo (opcional):');
     const confirmReject = confirm('¿Estás seguro de que quieres rechazar esta solicitud?');
     if (confirmReject) {
         console.log('Rechazando solicitud:', requestId, 'Motivo:', reason);
         
-        // Actualizar estado de la solicitud
-        updateRequestStatus(requestId, 'rejected', reason);
-        
-        // Actualizar estado en el calendario del estudiante usando BackendAPI
-        if (typeof BackendAPI !== 'undefined') {
-            BackendAPI.syncSessionStatus(requestId, 'rejected', 'tutor', 'tutor')
-                .then(() => {
-                    console.log('Estado sincronizado con el estudiante');
-                })
-                .catch(error => {
-                    console.error('Error sincronizando estado:', error);
+        try {
+            // Usar la API del backend para cambiar el estado de la sesión
+            if (typeof BackendAPI !== 'undefined' && BackendAPI.cambiarEstadoSesion) {
+                await BackendAPI.cambiarEstadoSesion(requestId, 'rechazada', {
+                    motivo_rechazo: reason || 'No especificado',
+                    fecha_rechazo: new Date().toISOString(),
+                    tutor_id: getCurrentTutorData()?.id
                 });
-        } else {
-            // Fallback: usar función local
-            updateStudentCalendarStatus(requestId, 'rejected');
+                
+                showNotification('Solicitud rechazada exitosamente', 'info');
+                
+                // Recargar las sesiones del tutor
+                loadPendingSessions();
+                loadRejectedSessions();
+                
+            } else {
+                // Fallback: actualizar solo localStorage
+                updateRequestStatus(requestId, 'rejected', reason);
+                updatePendingRequestsCounter(-1);
+                removeRequestFromList(requestId);
+                showNotification('Solicitud rechazada', 'info');
+                loadPendingSessions();
+            }
+            
+        } catch (error) {
+            console.error('Error rechazando solicitud:', error);
+            showNotification('Error al rechazar la solicitud. Inténtalo de nuevo.', 'error');
         }
-        
-        // Enviar notificación al estudiante (RF-15)
-        sendNotificationToStudent(requestId, 'rejected', reason);
-        
-        // Actualizar contador de solicitudes pendientes
-        updatePendingRequestsCounter(-1);
-        
-        showNotification('Solicitud rechazada', 'info');
-        
-        // Remover la solicitud de la lista
-        removeRequestFromList(requestId);
     }
 }
 
@@ -3077,6 +3157,290 @@ function getAssignedSessions() {
     return [];
 }
 
+// Función para cargar la sección de nueva clase
+function loadNewClassSection() {
+    console.log('📚 Cargando sección de nueva clase');
+    
+    const mainContent = document.getElementById('mainContent');
+    if (!mainContent) return;
+    
+    mainContent.innerHTML = `
+        <div class="section-header">
+            <h2><i class="fas fa-plus-circle"></i> Crear Nueva Clase</h2>
+            <p>Agrega una nueva clase que los estudiantes puedan reservar</p>
+        </div>
+        
+        <div class="form-container">
+            <form id="newClassForm" class="class-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="classSubject">Materia *</label>
+                        <select id="classSubject" required>
+                            <option value="">Seleccionar materia</option>
+                            <option value="Matemáticas">Matemáticas</option>
+                            <option value="Física">Física</option>
+                            <option value="Química">Química</option>
+                            <option value="Biología">Biología</option>
+                            <option value="Español">Español</option>
+                            <option value="Historia">Historia</option>
+                            <option value="Inglés">Inglés</option>
+                            <option value="Geografía">Geografía</option>
+                            <option value="Filosofía">Filosofía</option>
+                            <option value="Literatura">Literatura</option>
+                            <option value="Programación">Programación</option>
+                            <option value="Estadística">Estadística</option>
+                            <option value="Cálculo">Cálculo</option>
+                            <option value="Álgebra">Álgebra</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="classModality">Modalidad *</label>
+                        <select id="classModality" required>
+                            <option value="">Seleccionar modalidad</option>
+                            <option value="Presencial">Presencial</option>
+                            <option value="Virtual">Virtual</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="classDate">Fecha de la Clase *</label>
+                        <input type="date" id="classDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="classStartTime">Hora de Inicio *</label>
+                        <input type="time" id="classStartTime" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="classEndTime">Hora de Fin *</label>
+                        <input type="time" id="classEndTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <!-- Espacio para mantener diseño -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="classDescription">Descripción de la Clase</label>
+                    <textarea id="classDescription" rows="4" placeholder="Describe brevemente qué se enseñará en esta clase..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="maxStudents">Máximo de Estudiantes</label>
+                    <input type="number" id="maxStudents" min="1" max="10" value="1">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Crear Clase
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="loadSection('inicio')">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    // Configurar evento del formulario
+    const form = document.getElementById('newClassForm');
+    if (form) {
+        form.addEventListener('submit', handleNewClassSubmit);
+    }
+    
+    // Configurar validación de horas
+    const startTimeInput = document.getElementById('classStartTime');
+    const endTimeInput = document.getElementById('classEndTime');
+    
+    if (startTimeInput && endTimeInput) {
+        startTimeInput.addEventListener('change', validateTimeRange);
+        endTimeInput.addEventListener('change', validateTimeRange);
+    }
+}
+
+// Función para manejar el envío del formulario de nueva clase
+function handleNewClassSubmit(event) {
+    event.preventDefault();
+    
+    try {
+        const formData = {
+            subject: document.getElementById('classSubject').value,
+            modality: document.getElementById('classModality').value,
+            date: document.getElementById('classDate').value,
+            startTime: document.getElementById('classStartTime').value,
+            endTime: document.getElementById('classEndTime').value,
+            description: document.getElementById('classDescription').value,
+            maxStudents: parseInt(document.getElementById('maxStudents').value) || 1
+        };
+        
+        // Validar datos
+        if (!formData.subject || !formData.modality || !formData.date || !formData.startTime || !formData.endTime) {
+            showNotification('Por favor completa todos los campos obligatorios', 'error');
+            return;
+        }
+        
+        // Validar rango de horas
+        if (formData.startTime >= formData.endTime) {
+            showNotification('La hora de fin debe ser posterior a la hora de inicio', 'error');
+            return;
+        }
+        
+        // Crear la clase
+        const newClass = createNewClass(formData);
+        
+        // Mostrar mensaje de éxito
+        showNotification('¡Clase creada exitosamente! Los estudiantes podrán verla ahora.', 'success');
+        
+        // Limpiar formulario
+        document.getElementById('newClassForm').reset();
+        
+        // Volver al inicio
+        setTimeout(() => {
+            loadSection('inicio');
+        }, 2000);
+        
+    } catch (error) {
+        console.error('Error creando clase:', error);
+        showNotification('Error al crear la clase. Inténtalo de nuevo.', 'error');
+    }
+}
+
+// Función para validar el rango de horas
+function validateTimeRange() {
+    const startTime = document.getElementById('classStartTime').value;
+    const endTime = document.getElementById('classEndTime').value;
+    
+    if (startTime && endTime && startTime >= endTime) {
+        document.getElementById('classEndTime').setCustomValidity('La hora de fin debe ser posterior a la hora de inicio');
+    } else {
+        document.getElementById('classEndTime').setCustomValidity('');
+    }
+}
+
+// Función para crear una nueva clase desde el perfil del tutor
+function createNewClass(classData) {
+    try {
+        console.log('🎓 Creando nueva clase:', classData);
+        
+        // Obtener datos del tutor actual
+        const currentTutor = getCurrentTutorData();
+        if (!currentTutor) {
+            throw new Error('No se pudo obtener datos del tutor');
+        }
+        
+        // Generar ID único para la clase
+        const existingClasses = JSON.parse(localStorage.getItem('tutorClasses') || '[]');
+        const classId = `CLASS-${Date.now()}`;
+        
+        // Crear objeto de clase con el formato correcto
+        const newClass = {
+            id: classId,
+            name: currentTutor.name || currentTutor.nombreCompleto,
+            specialty: classData.subject,
+            rating: 4.5, // Rating inicial
+            reviewsCount: 0,
+            available: true,
+            nextAvailable: 'Disponible ahora',
+            modalities: [classData.modality],
+            startTime: classData.startTime,
+            endTime: classData.endTime,
+            duration: calculateClassDuration(classData.startTime, classData.endTime),
+            password: '123456',
+            date: classData.date || new Date().toISOString().split('T')[0], // Fecha de la clase
+            createdAt: new Date().toISOString(),
+            tutorId: currentTutor.id,
+            description: classData.description || '',
+            maxStudents: classData.maxStudents || 1
+        };
+        
+        // Agregar a la lista de clases del tutor
+        existingClasses.push(newClass);
+        localStorage.setItem('tutorClasses', JSON.stringify(existingClasses));
+        
+        // Notificar a los alumnos en tiempo real
+        notifyStudentsNewClass(newClass);
+        
+        console.log('✅ Nueva clase creada exitosamente:', newClass);
+        return newClass;
+        
+    } catch (error) {
+        console.error('❌ Error creando nueva clase:', error);
+        throw error;
+    }
+}
+
+// Función para calcular la duración de la clase
+function calculateClassDuration(startTime, endTime) {
+    try {
+        const [startHour, startMin] = startTime.split(':').map(Number);
+        const [endHour, endMin] = endTime.split(':').map(Number);
+        
+        const startMinutes = startHour * 60 + startMin;
+        const endMinutes = endHour * 60 + endMin;
+        const durationMinutes = endMinutes - startMinutes;
+        
+        if (durationMinutes <= 0) return '0hr';
+        
+        const hours = Math.floor(durationMinutes / 60);
+        const minutes = durationMinutes % 60;
+        
+        if (hours === 0) {
+            return `${minutes}min`;
+        } else if (minutes === 0) {
+            return `${hours}hr`;
+        } else {
+            return `${hours}hr ${minutes}min`;
+        }
+    } catch (error) {
+        console.error('Error calculando duración:', error);
+        return '1hr';
+    }
+}
+
+// Función para notificar a los alumnos sobre nueva clase
+function notifyStudentsNewClass(newClass) {
+    try {
+        // Obtener lista de alumnos conectados
+        const connectedStudents = JSON.parse(localStorage.getItem('connectedStudents') || '[]');
+        
+        // Crear notificación
+        const notification = {
+            id: `NOTIF-${Date.now()}`,
+            type: 'new_class',
+            title: 'Nueva Clase Disponible',
+            message: `El tutor ${newClass.name} ha agregado una nueva clase de ${newClass.specialty}`,
+            classData: newClass,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Enviar notificación a todos los alumnos conectados
+        connectedStudents.forEach(studentId => {
+            const studentNotifications = JSON.parse(localStorage.getItem(`studentNotifications_${studentId}`) || '[]');
+            studentNotifications.push(notification);
+            localStorage.setItem(`studentNotifications_${studentId}`, JSON.stringify(studentNotifications));
+        });
+        
+        // Simular actualización en tiempo real
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('newClassAdded', {
+                detail: { class: newClass, notification }
+            }));
+        }
+        
+        console.log('📢 Notificación enviada a alumnos:', notification);
+        
+    } catch (error) {
+        console.error('❌ Error enviando notificación:', error);
+    }
+}
+
 // Función para crear una sesión real que el administrador pueda ver
 function createRealSession(sessionData) {
     try {
@@ -3559,6 +3923,56 @@ window.TutorInterface = {
     showSettings,
     logout,
     updateStudentCalendarStatus,
-    cleanOldAvailabilityData
+    cleanOldAvailabilityData,
+    notifyStudentsAboutAvailabilityChange
 };
+
+// Función para notificar a estudiantes sobre cambios en disponibilidad
+function notifyStudentsAboutAvailabilityChange(availability, action) {
+  try {
+    console.log(`📢 Notificando a estudiantes sobre disponibilidad ${action}:`, availability);
+    
+    // Obtener estudiantes conectados
+    const connectedStudents = JSON.parse(localStorage.getItem('connectedStudents') || '[]');
+    
+    // Crear notificación para cada estudiante
+    connectedStudents.forEach(studentId => {
+      const notification = {
+        id: `avail_${Date.now()}_${studentId}`,
+        type: 'availability_change',
+        action: action,
+        tutorId: getCurrentTutorId(),
+        tutorName: getCurrentTutorName(),
+        subject: availability.subject,
+        date: availability.date,
+        startTime: availability.startTime,
+        endTime: availability.endTime,
+        modality: availability.modality,
+        message: `Nueva disponibilidad de ${getCurrentTutorName()} para ${availability.subject}`,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Guardar notificación para el estudiante específico
+      const studentNotifications = JSON.parse(localStorage.getItem(`studentNotifications_${studentId}`) || '[]');
+      studentNotifications.push(notification);
+      localStorage.setItem(`studentNotifications_${studentId}`, JSON.stringify(studentNotifications));
+    });
+    
+    // Disparar evento personalizado para sincronización en tiempo real
+    const event = new CustomEvent('tutorAvailabilityChanged', {
+      detail: {
+        availability: availability,
+        action: action,
+        tutorId: getCurrentTutorId(),
+        tutorName: getCurrentTutorName()
+      }
+    });
+    window.dispatchEvent(event);
+    
+    console.log('✅ Notificación enviada a estudiantes');
+    
+  } catch (error) {
+    console.error('❌ Error notificando a estudiantes:', error);
+  }
+}
 

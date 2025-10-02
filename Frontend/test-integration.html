@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Integración Tutor-Alumno</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Prueba de Integración Tutor-Alumno</h1>
+    
+    <div class="container">
+        <h2>📋 Estado Actual</h2>
+        <div id="status" class="status info">
+            Inicializando sistema de prueba...
+        </div>
+        
+        <h3>👥 Tutores en el Sistema</h3>
+        <div id="tutors-display" class="data-display">Cargando...</div>
+        
+        <h3>📅 Disponibilidades Configuradas</h3>
+        <div id="availability-display" class="data-display">Cargando...</div>
+    </div>
+    
+    <div class="container">
+        <h2>🔧 Acciones de Prueba</h2>
+        
+        <h3>Para Tutores:</h3>
+        <button class="btn btn-success" onclick="createSampleTutors()">
+            👥 Crear Tutores de Ejemplo
+        </button>
+        <button class="btn btn-success" onclick="createSampleAvailabilities()">
+            📅 Crear Disponibilidades de Ejemplo
+        </button>
+        <button class="btn" onclick="simulateTutorScheduleUpdate()">
+            🔄 Simular Actualización de Horario
+        </button>
+        
+        <h3>Para Alumnos:</h3>
+        <button class="btn" onclick="testStudentSearch()">
+            🔍 Probar Búsqueda de Tutores
+        </button>
+        <button class="btn" onclick="testBookingProcess()">
+            📝 Probar Proceso de Reserva
+        </button>
+        
+        <h3>Utilidades:</h3>
+        <button class="btn" onclick="clearAllData()">
+            🗑️ Limpiar Todos los Datos
+        </button>
+        <button class="btn" onclick="refreshDisplay()">
+            🔄 Actualizar Visualización
+        </button>
+    </div>
+    
+    <div class="container">
+        <h2>📊 Resultados de Prueba</h2>
+        <div id="test-results" class="data-display">
+            Los resultados de las pruebas aparecerán aquí...
+        </div>
+    </div>
+
+    <script>
+        // Función para mostrar estado
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        // Función para mostrar resultados de prueba
+        function showTestResult(message) {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+        }
+        
+        // Función para actualizar la visualización
+        function refreshDisplay() {
+            const tutors = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const availabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            document.getElementById('tutors-display').textContent = 
+                JSON.stringify(tutors.filter(u => u.rol === 'Tutor'), null, 2);
+            
+            document.getElementById('availability-display').textContent = 
+                JSON.stringify(availabilities, null, 2);
+            
+            showStatus(`Sistema actualizado: ${tutors.filter(u => u.rol === 'Tutor').length} tutores, ${availabilities.length} disponibilidades`, 'success');
+        }
+        
+        // Crear tutores de ejemplo
+        function createSampleTutors() {
+            const sampleTutors = [
+                {
+                    id: 'tutor_001',
+                    nombreCompleto: 'Dr. Carlos Mendoza',
+                    email: 'carlos.mendoza@tutor.edu',
+                    rol: 'Tutor',
+                    especialidad: 'Matemáticas',
+                    experiencia: 5,
+                    calificacion: 4.8
+                },
+                {
+                    id: 'tutor_002',
+                    nombreCompleto: 'Dra. Ana López',
+                    email: 'ana.lopez@tutor.edu',
+                    rol: 'Tutor',
+                    especialidad: 'Física',
+                    experiencia: 3,
+                    calificacion: 4.6
+                },
+                {
+                    id: 'tutor_003',
+                    nombreCompleto: 'Prof. María García',
+                    email: 'maria.garcia@tutor.edu',
+                    rol: 'Tutor',
+                    especialidad: 'Química',
+                    experiencia: 4,
+                    calificacion: 4.7
+                }
+            ];
+            
+            // Obtener usuarios existentes y agregar tutores
+            const existingUsers = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const tutorsToAdd = sampleTutors.filter(tutor => 
+                !existingUsers.some(user => user.id === tutor.id)
+            );
+            
+            existingUsers.push(...tutorsToAdd);
+            localStorage.setItem('usuarios', JSON.stringify(existingUsers));
+            
+            showTestResult(`✅ Creados ${tutorsToAdd.length} tutores de ejemplo`);
+            refreshDisplay();
+        }
+        
+        // Crear disponibilidades de ejemplo
+        function createSampleAvailabilities() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const sampleAvailabilities = [
+                {
+                    id: 'avail_001',
+                    tutor: 'Dr. Carlos Mendoza',
+                    tutorId: 'tutor_001',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '10:00',
+                    endTime: '11:00',
+                    subject: 'matematicas',
+                    modality: 'Presencial',
+                    duration: 60,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_002',
+                    tutor: 'Dr. Carlos Mendoza',
+                    tutorId: 'tutor_001',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '14:00',
+                    endTime: '15:30',
+                    subject: 'matematicas',
+                    modality: 'Virtual',
+                    duration: 90,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_003',
+                    tutor: 'Dra. Ana López',
+                    tutorId: 'tutor_002',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '16:00',
+                    endTime: '17:00',
+                    subject: 'fisica',
+                    modality: 'Presencial',
+                    duration: 60,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_004',
+                    tutor: 'Prof. María García',
+                    tutorId: 'tutor_003',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '09:00',
+                    endTime: '10:00',
+                    subject: 'quimica',
+                    modality: 'Virtual',
+                    duration: 60,
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem('tutorAvailability', JSON.stringify(sampleAvailabilities));
+            
+            showTestResult(`✅ Creadas ${sampleAvailabilities.length} disponibilidades de ejemplo`);
+            refreshDisplay();
+        }
+        
+        // Simular actualización de horario por parte del tutor
+        function simulateTutorScheduleUpdate() {
+            const availabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            // Agregar una nueva disponibilidad
+            const newAvailability = {
+                id: 'avail_' + Date.now(),
+                tutor: 'Dr. Carlos Mendoza',
+                tutorId: 'tutor_001',
+                date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 2 días después
+                startTime: '11:00',
+                endTime: '12:00',
+                subject: 'matematicas',
+                modality: 'Presencial',
+                duration: 60,
+                createdAt: new Date().toISOString()
+            };
+            
+            availabilities.push(newAvailability);
+            localStorage.setItem('tutorAvailability', JSON.stringify(availabilities));
+            
+            // Simular evento de storage para notificar a otras pestañas
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'tutorAvailability',
+                newValue: JSON.stringify(availabilities)
+            }));
+            
+            showTestResult(`🔄 Simulada actualización de horario del tutor`);
+            refreshDisplay();
+        }
+        
+        // Probar búsqueda de tutores
+        function testStudentSearch() {
+            const availabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const tutors = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            
+            if (availabilities.length === 0) {
+                showTestResult(`❌ No hay disponibilidades para buscar tutores`);
+                return;
+            }
+            
+            // Simular la función getAvailableTutors
+            const tutorUsers = tutors.filter(user => user.rol === 'Tutor');
+            const availableTutors = [];
+            
+            availabilities.forEach(availability => {
+                const tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
+                if (tutor) {
+                    const existingTutor = availableTutors.find(t => t.id === tutor.id);
+                    if (existingTutor) {
+                        existingTutor.availabilities.push(availability);
+                    } else {
+                        availableTutors.push({
+                            id: tutor.id,
+                            name: tutor.nombreCompleto,
+                            email: tutor.email,
+                            specialty: availability.subject,
+                            availabilities: [availability]
+                        });
+                    }
+                }
+            });
+            
+            showTestResult(`🔍 Búsqueda exitosa: ${availableTutors.length} tutores disponibles encontrados`);
+            showTestResult(`📋 Detalles: ${availableTutors.map(t => `${t.name} (${t.availabilities.length} horarios)`).join(', ')}`);
+        }
+        
+        // Probar proceso de reserva
+        function testBookingProcess() {
+            const availabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            
+            if (availabilities.length === 0) {
+                showTestResult(`❌ No hay disponibilidades para probar reserva`);
+                return;
+            }
+            
+            const firstAvailability = availabilities[0];
+            
+            // Simular datos de sesión
+            const sessionData = {
+                tutor_id: firstAvailability.tutorId,
+                materia_id: firstAvailability.subject,
+                fecha: firstAvailability.date,
+                hora_inicio: firstAvailability.startTime,
+                hora_fin: firstAvailability.endTime,
+                modalidad_id: firstAvailability.modality === 'Presencial' ? 1 : 2,
+                ubicacion_o_enlace: firstAvailability.modality === 'Presencial' ? 'Aula 201' : 'Zoom'
+            };
+            
+            showTestResult(`📝 Proceso de reserva simulado exitosamente`);
+            showTestResult(`📋 Datos de sesión: ${JSON.stringify(sessionData, null, 2)}`);
+        }
+        
+        // Limpiar todos los datos
+        function clearAllData() {
+            localStorage.removeItem('usuarios');
+            localStorage.removeItem('tutorAvailability');
+            localStorage.removeItem('pendingSessions');
+            localStorage.removeItem('confirmedSessions');
+            
+            showTestResult(`🗑️ Todos los datos han sido limpiados`);
+            refreshDisplay();
+        }
+        
+        // Inicializar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus('Sistema de prueba inicializado correctamente', 'success');
+            refreshDisplay();
+        });
+    </script>
+</body>
+</html>
+

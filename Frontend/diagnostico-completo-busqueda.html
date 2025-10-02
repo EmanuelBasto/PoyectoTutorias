@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico Completo - Problema de Búsqueda</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .data-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .data-section h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        pre {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 12px;
+        }
+        .search-form {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .log-section {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-bug"></i> Diagnóstico Completo - Problema de Búsqueda</h1>
+        <p>Esta página te ayuda a diagnosticar por qué no aparecen tutores en la búsqueda.</p>
+        
+        <div class="error">
+            <h3>🚨 Problema Reportado</h3>
+            <p><strong>"Me sigue sin salir ningún tutor"</strong></p>
+            <p>El sistema muestra "0 tutores disponibles" incluso después de configurar disponibilidad.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2><i class="fas fa-database"></i> Verificación de Datos</h2>
+        <button class="btn btn-success" onclick="checkAllData()">
+            <i class="fas fa-search"></i> Verificar Todos los Datos
+        </button>
+        <button class="btn btn-warning" onclick="createTestData()">
+            <i class="fas fa-plus"></i> Crear Datos de Prueba
+        </button>
+        <button class="btn btn-danger" onclick="clearAllData()">
+            <i class="fas fa-trash"></i> Limpiar Todo
+        </button>
+        
+        <div id="dataCheck"></div>
+    </div>
+
+    <div class="container">
+        <h2><i class="fas fa-search"></i> Prueba de Búsqueda con Logs</h2>
+        <div class="search-form">
+            <div class="form-group">
+                <label>Materia:</label>
+                <select id="testSubject">
+                    <option value="">Seleccionar materia</option>
+                    <option value="matematicas">Matemáticas</option>
+                    <option value="fisica">Física</option>
+                    <option value="quimica">Química</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Hora de Inicio:</label>
+                <input type="time" id="testStartTime">
+            </div>
+            <div class="form-group">
+                <label>Hora de Fin:</label>
+                <input type="time" id="testEndTime">
+            </div>
+            <div class="form-group">
+                <label>Modalidad:</label>
+                <select id="testModality">
+                    <option value="">Seleccionar modalidad</option>
+                    <option value="Presencial">Presencial</option>
+                    <option value="Virtual">Virtual</option>
+                </select>
+            </div>
+            <button class="btn" onclick="testSearchWithLogs()">
+                <i class="fas fa-search"></i> Probar Búsqueda con Logs
+            </button>
+        </div>
+        
+        <div class="log-section" id="searchLogs">
+            <div>Los logs de búsqueda aparecerán aquí...</div>
+        </div>
+        
+        <div id="searchResults"></div>
+    </div>
+
+    <script>
+        // Interceptar console.log para mostrar en la página
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        function addToLog(message, type = 'log') {
+            const logSection = document.getElementById('searchLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#f00' : type === 'warn' ? '#ff0' : '#0f0';
+            logSection.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logSection.scrollTop = logSection.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToLog(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToLog(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToLog(args.join(' '), 'warn');
+        };
+        
+        function checkAllData() {
+            console.log('🔍 Verificando todos los datos...');
+            
+            // Verificar localStorage
+            const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const availabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
+            
+            console.log('📊 Datos encontrados:');
+            console.log('- Usuarios:', usuarios.length);
+            console.log('- Disponibilidades:', availabilities.length);
+            console.log('- Sesión de usuario:', Object.keys(userSession).length > 0 ? 'Activa' : 'Inactiva');
+            
+            // Verificar tutores
+            const tutors = usuarios.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+            console.log('- Tutores:', tutors.length);
+            
+            // Verificar enlaces
+            let linkedCount = 0;
+            availabilities.forEach(avail => {
+                const tutor = tutors.find(t => t.nombreCompleto === avail.tutor || t.id === avail.tutorId);
+                if (tutor) linkedCount++;
+            });
+            
+            console.log('- Disponibilidades enlazadas:', linkedCount);
+            console.log('- Disponibilidades sin enlace:', availabilities.length - linkedCount);
+            
+            // Mostrar en pantalla
+            const dataCheck = document.getElementById('dataCheck');
+            dataCheck.innerHTML = `
+                <div class="data-section">
+                    <h4>📊 Resumen de Datos</h4>
+                    <p><strong>Usuarios:</strong> ${usuarios.length}</p>
+                    <p><strong>Tutores:</strong> ${tutors.length}</p>
+                    <p><strong>Disponibilidades:</strong> ${availabilities.length}</p>
+                    <p><strong>Enlaces correctos:</strong> ${linkedCount}</p>
+                    <p><strong>Enlaces rotos:</strong> ${availabilities.length - linkedCount}</p>
+                    <p><strong>Sesión activa:</strong> ${Object.keys(userSession).length > 0 ? 'Sí' : 'No'}</p>
+                </div>
+                
+                <div class="data-section">
+                    <h4>👥 Usuarios</h4>
+                    <pre>${JSON.stringify(usuarios, null, 2)}</pre>
+                </div>
+                
+                <div class="data-section">
+                    <h4>📅 Disponibilidades</h4>
+                    <pre>${JSON.stringify(availabilities, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        function createTestData() {
+            console.log('📝 Creando datos de prueba...');
+            
+            // Crear usuarios de prueba
+            const testUsers = [
+                {
+                    id: 'tutor_001',
+                    nombreCompleto: 'Dr. Carlos Mendoza',
+                    email: 'carlos.mendoza@tutor.edu',
+                    rol: 'Tutor',
+                    especialidad: 'Matemáticas'
+                },
+                {
+                    id: 'student_001',
+                    nombreCompleto: 'María González',
+                    email: 'maria.gonzalez@student.edu',
+                    rol: 'Alumno'
+                }
+            ];
+            
+            // Crear disponibilidades de prueba
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const testAvailabilities = [
+                {
+                    id: 'avail_001',
+                    tutor: 'Dr. Carlos Mendoza',
+                    tutorId: 'tutor_001',
+                    tutorEmail: 'carlos.mendoza@tutor.edu',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '10:00',
+                    endTime: '11:00',
+                    subject: 'matematicas',
+                    modality: 'Presencial',
+                    duration: 60,
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            // Guardar datos
+            localStorage.setItem('usuarios', JSON.stringify(testUsers));
+            localStorage.setItem('tutorAvailability', JSON.stringify(testAvailabilities));
+            
+            console.log('✅ Datos de prueba creados');
+            checkAllData();
+        }
+        
+        function clearAllData() {
+            if (confirm('¿Estás seguro de que quieres limpiar todos los datos?')) {
+                localStorage.clear();
+                console.log('🗑️ Datos limpiados');
+                checkAllData();
+            }
+        }
+        
+        function testSearchWithLogs() {
+            console.log('🧪 Iniciando prueba de búsqueda con logs detallados...');
+            
+            const subject = document.getElementById('testSubject').value;
+            const startTime = document.getElementById('testStartTime').value;
+            const endTime = document.getElementById('testEndTime').value;
+            const modality = document.getElementById('testModality').value;
+            
+            console.log('🔍 Criterios de búsqueda:', { subject, startTime, endTime, modality });
+            
+            // Simular la función getAvailableTutors
+            try {
+                const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+                const tutors = JSON.parse(localStorage.getItem('usuarios') || '[]');
+                const tutorUsers = tutors.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+                
+                console.log('📊 Datos iniciales:');
+                console.log('- Disponibilidades:', tutorAvailabilities.length);
+                console.log('- Tutores:', tutorUsers.length);
+                
+                const availableTutors = [];
+                
+                tutorAvailabilities.forEach((availability, index) => {
+                    console.log(`🔍 Verificando disponibilidad ${index + 1}:`, availability);
+                    
+                    let matches = true;
+                    
+                    // Aplicar filtros
+                    if (subject && availability.subject !== subject) {
+                        console.log(`❌ Materia no coincide: ${availability.subject} vs ${subject}`);
+                        matches = false;
+                    }
+                    
+                    if (startTime && availability.startTime !== startTime) {
+                        console.log(`❌ Hora inicio no coincide: ${availability.startTime} vs ${startTime}`);
+                        matches = false;
+                    }
+                    
+                    if (endTime && availability.endTime !== endTime) {
+                        console.log(`❌ Hora fin no coincide: ${availability.endTime} vs ${endTime}`);
+                        matches = false;
+                    }
+                    
+                    if (modality && availability.modality !== modality) {
+                        console.log(`❌ Modalidad no coincide: ${availability.modality} vs ${modality}`);
+                        matches = false;
+                    }
+                    
+                    if (!matches) {
+                        console.log(`❌ Disponibilidad ${index + 1} no coincide con filtros`);
+                        return;
+                    }
+                    
+                    console.log(`✅ Disponibilidad ${index + 1} coincide con filtros`);
+                    
+                    // Buscar tutor
+                    let tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
+                    if (!tutor && availability.tutorId) {
+                        tutor = tutorUsers.find(t => t.id === availability.tutorId);
+                    }
+                    
+                    if (!tutor) {
+                        console.log(`❌ Tutor no encontrado para disponibilidad ${index + 1}`);
+                        return;
+                    }
+                    
+                    console.log(`✅ Tutor encontrado: ${tutor.nombreCompleto}`);
+                    
+                    availableTutors.push({
+                        id: tutor.id,
+                        name: tutor.nombreCompleto,
+                        email: tutor.email,
+                        specialty: availability.subject,
+                        available: true,
+                        availabilities: [availability]
+                    });
+                });
+                
+                console.log('📊 RESULTADO FINAL:');
+                console.log('- Tutores encontrados:', availableTutors.length);
+                console.log('- Lista de tutores:', availableTutors.map(t => t.name));
+                
+                // Mostrar resultados
+                const resultsDiv = document.getElementById('searchResults');
+                if (availableTutors.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ No se encontraron tutores</h4>
+                            <p>Revisa los logs arriba para ver qué está pasando.</p>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Se encontraron ${availableTutors.length} tutores</h4>
+                            ${availableTutors.map(tutor => `
+                                <div style="background: white; padding: 10px; margin: 5px 0; border-radius: 5px;">
+                                    <h5>${tutor.name}</h5>
+                                    <p><strong>Email:</strong> ${tutor.email}</p>
+                                    <p><strong>Especialidad:</strong> ${tutor.specialty}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('❌ Error en la prueba:', error);
+            }
+        }
+        
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAllData();
+        });
+    </script>
+</body>
+</html>
+

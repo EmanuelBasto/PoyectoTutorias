@@ -11,8 +11,17 @@ document.addEventListener('DOMContentLoaded', function () {
   // Inicializar sincronización de estados con el tutor
   listenForStatusChanges();
   
+  // Inicializar escucha de cambios en disponibilidades
+  listenForAvailabilityChanges();
+  
   // Limpiar y recrear sesiones con fechas correctas
   recreateStudentSessionsWithCorrectDates();
+  
+  // Configurar escucha de nuevas clases en tiempo real
+  setupRealTimeClassUpdates();
+  
+  // Configurar sincronización con disponibilidad de tutores
+  setupTutorAvailabilitySync();
   
   // Event listener para cerrar menú móvil al hacer clic fuera
   document.addEventListener('click', function(event) {
@@ -72,6 +81,38 @@ function initializeApp() {
   loadStudentProfile();
   // Cargar sesiones del estudiante desde el backend
   loadStudentSessions();
+  // Sincronizar disponibilidades de tutores
+  syncTutorAvailabilities();
+  // Crear datos de ejemplo si no existen
+  createSampleDataIfNeeded();
+  
+  // Verificar datos al inicializar
+  setTimeout(() => {
+    checkDataAvailability();
+  }, 1000);
+}
+
+// Función para verificar disponibilidad de datos
+function checkDataAvailability() {
+  const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+  const tutors = JSON.parse(localStorage.getItem('usuarios') || '[]');
+  const tutorUsers = tutors.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+  
+  console.log('🔍 Verificación de datos al inicializar:');
+  console.log('📊 Disponibilidades:', tutorAvailabilities.length);
+  console.log('👥 Usuarios totales:', tutors.length);
+  console.log('🎓 Tutores:', tutorUsers.length);
+  
+  if (tutorAvailabilities.length === 0) {
+    console.log('⚠️ No hay disponibilidades configuradas por tutores reales');
+    showNotification('No hay tutores con disponibilidad configurada. Los tutores deben configurar su horario primero.', 'warning');
+  } else if (tutorUsers.length === 0) {
+    console.log('⚠️ No hay tutores registrados');
+    showNotification('No hay tutores registrados. Los tutores deben iniciar sesión primero.', 'warning');
+  } else {
+    console.log('✅ Datos de usuarios reales encontrados');
+    console.log(`📊 ${tutorAvailabilities.length} disponibilidades de ${tutorUsers.length} tutores`);
+  }
 }
 
 function setupEventListeners() {
@@ -364,7 +405,7 @@ function displayUpcomingSessions(sessions) {
   sessionsList.innerHTML = sessions
     .map(
       (session) => `
-        <div class="session-item">
+        <div class="session-item ${session.isRealClass ? 'real-class' : ''}">
             <div class="session-time">
                 <span class="time">${session.time || ''}</span>
                 <span class="duration">${session.duration || ''}</span>
@@ -372,8 +413,9 @@ function displayUpcomingSessions(sessions) {
             <div class="session-info">
                 <h4>${session.title || session.subject || ''}</h4>
                 <p>${session.tutor || ''} - ${session.modality || ''}</p>
-                <span class="session-date">${session.date || ''}</span>
+                <span class="session-date">${formatDate(session.date) || session.date || ''}</span>
                 <span class="session-status">${getStatusBadge(session.status)}</span>
+                ${session.isRealClass ? '<span class="real-class-badge">Clase Real</span>' : ''}
             </div>
             <div class="session-actions">
                 ${session.status === 'pending' ? `
@@ -421,18 +463,21 @@ function recreateStudentSessionsWithCorrectDates() {
 // Función para crear sesiones de ejemplo para probar el flujo
 function createSampleSessions() {
   try {
-    console.log('Creando sesiones de ejemplo con fechas futuras...');
+    console.log('Creando sesiones de ejemplo con maestros reales de la base de datos...');
     
-    // Crear algunas sesiones de ejemplo
+    // Obtener clases creadas por tutores desde localStorage
+    const tutorClasses = JSON.parse(localStorage.getItem('tutorClasses') || '[]');
+    
+    // Crear algunas sesiones de ejemplo usando los maestros reales
     const sampleSessions = [
       {
         id: 'pending_' + Date.now(),
         student: 'María González',
         studentEmail: 'maria.gonzalez@email.com',
-        tutor: 'Dr. Carlos Mendoza',
-        tutorId: 'tutor_001',
+        tutor: 'MTRMatematicas',
+        tutorId: 'math-1',
         subject: 'Matemáticas',
-        date: '2025-10-03', // 2 días después de hoy
+        date: '2024-01-20',
         time: '10:00',
         endTime: '11:00',
         modality: 'Presencial',
@@ -445,45 +490,66 @@ function createSampleSessions() {
         id: 'pending_' + (Date.now() + 1),
         student: 'Juan Pérez',
         studentEmail: 'juan.perez@email.com',
-        tutor: 'Dra. Ana López',
-        tutorId: 'tutor_002',
+        tutor: 'MTRFisica',
+        tutorId: 'phy-1',
         subject: 'Física',
-        date: '2025-10-04', // 3 días después de hoy
+        date: '2024-01-21',
         time: '14:00',
-        endTime: '15:30',
-        modality: 'Virtual',
-        location: 'Zoom',
+        endTime: '15:00',
+        modality: 'Presencial',
+        location: 'Laboratorio de Física',
         status: 'pending',
         createdAt: new Date().toISOString(),
-        duration: '1hr 30min'
+        duration: '1hr'
       },
       {
         id: 'pending_' + (Date.now() + 2),
         student: 'Laura Martínez',
         studentEmail: 'laura.martinez@email.com',
-        tutor: 'Dr. Carlos Mendoza',
-        tutorId: 'tutor_001',
+        tutor: 'MTRQuimica',
+        tutorId: 'chem-1',
         subject: 'Química',
-        date: '2025-10-05', // 4 días después de hoy
+        date: '2024-01-22',
         time: '16:00',
         endTime: '17:00',
-        modality: 'Presencial',
-        location: 'Laboratorio 3',
+        modality: 'Virtual',
+        location: 'Zoom',
         status: 'pending',
         createdAt: new Date().toISOString(),
         duration: '1hr'
       }
     ];
     
-    // Guardar sesiones de ejemplo
-    localStorage.setItem('pendingSessions', JSON.stringify(sampleSessions));
-    
-    // Crear notificaciones para los tutores
-    sampleSessions.forEach(session => {
-      notifyTutorNewSession(session);
+    // Agregar sesiones creadas por tutores reales si existen
+    tutorClasses.forEach((tutorClass, index) => {
+      if (index < 3) { // Limitar a 3 sesiones adicionales
+        const sessionDate = new Date(tutorClass.date);
+        sessionDate.setDate(sessionDate.getDate() + index + 1); // Fechas futuras
+        
+        sampleSessions.push({
+          id: 'tutor_class_' + tutorClass.id,
+          student: 'Estudiante Actual',
+          studentEmail: 'estudiante@email.com',
+          tutor: tutorClass.name,
+          tutorId: tutorClass.id,
+          subject: tutorClass.specialty,
+          date: sessionDate.toISOString().split('T')[0],
+          time: tutorClass.startTime,
+          endTime: tutorClass.endTime,
+          modality: tutorClass.modalities[0],
+          location: tutorClass.modalities[0] === 'Presencial' ? 'Aula Principal' : 'Zoom',
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+          duration: tutorClass.duration,
+          isRealClass: true // Marcar como clase real
+        });
+      }
     });
     
-    console.log('Sesiones de ejemplo creadas:', sampleSessions);
+    // Guardar sesiones pendientes
+    localStorage.setItem('pendingSessions', JSON.stringify(sampleSessions));
+    
+    console.log('✅ Sesiones de ejemplo creadas con maestros reales:', sampleSessions.length);
     
   } catch (error) {
     console.error('Error creando sesiones de ejemplo:', error);
@@ -1033,89 +1099,1007 @@ function verDetallesTutor(tutorId) {
 
 // FUNCIONES DE BÚSQUEDA Y RESERVA
 function searchTutors() {
-  const area = document.getElementById('areaFilter')?.value || '';
-  const modality = document.getElementById('modalityFilter')?.value || '';
-  const day = document.getElementById('dayFilter')?.value || '';
-  const time = document.getElementById('timeFilter')?.value || '';
-  const duration = document.getElementById('durationFilter')?.value || '';
+  console.log('🔍 === BÚSQUEDA DE TUTORES CON DISPONIBILIDAD REAL ===');
+  
+  // Obtener datos del formulario
+  const searchCriteria = {
+    date: document.getElementById('dateFilter')?.value,
+    subject: document.getElementById('subjectFilter')?.value,
+    startTime: document.getElementById('startTimeFilter')?.value,
+    endTime: document.getElementById('endTimeFilter')?.value,
+    modality: document.getElementById('modalityFilter')?.value
+  };
+  
+  console.log('📋 Criterios de búsqueda:', searchCriteria);
+  
+  // Validar que al menos un campo esté lleno
+  const hasCriteria = Object.values(searchCriteria).some(value => value && value.trim() !== '');
+  if (!hasCriteria) {
+    showNotification('Por favor completa al menos un campo de búsqueda', 'error');
+    return;
+  }
+  
+  // Buscar tutores con disponibilidad real
+  const availableTutors = findTutorsWithRealAvailability(searchCriteria);
+  
+  if (availableTutors.length === 0) {
+    showNotification('No se encontraron tutores disponibles con los criterios especificados', 'info');
+    displayTutors([]);
+    return;
+  }
+  
+  console.log('✅ Tutores encontrados:', availableTutors.length);
+  displayTutors(availableTutors);
+  showNotification(`Se encontraron ${availableTutors.length} tutor${availableTutors.length > 1 ? 'es' : ''} disponible${availableTutors.length > 1 ? 's' : ''}`, 'success');
+}
 
-  console.log('Buscando tutores:', { area, modality, day, time, duration });
-  showNotification('Buscando tutores disponibles...', 'info');
+// Función para encontrar tutores con disponibilidad real
+function findTutorsWithRealAvailability(criteria) {
+  try {
+    console.log('🔍 Buscando tutores con disponibilidad real...');
+    
+    // Obtener disponibilidad de tutores desde localStorage
+    const tutorAvailability = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+    console.log('📅 Disponibilidad de tutores:', tutorAvailability.length, 'registros');
+    
+    // Obtener clases creadas por tutores
+    const tutorClasses = JSON.parse(localStorage.getItem('tutorClasses') || '[]');
+    console.log('🎓 Clases de tutores:', tutorClasses.length, 'registros');
+    
+    // Combinar disponibilidad y clases
+    const allTutorData = [...tutorAvailability, ...tutorClasses];
+    
+    // Filtrar por criterios
+    const matchingTutors = allTutorData.filter(tutorData => {
+      return matchesSearchCriteria(tutorData, criteria);
+    });
+    
+    // Convertir a formato de tutor para mostrar
+    const tutors = matchingTutors.map(tutorData => {
+      return convertToTutorFormat(tutorData);
+    }).filter(tutor => tutor !== null);
+    
+    // Eliminar duplicados por ID
+    const uniqueTutors = tutors.filter((tutor, index, self) => 
+      index === self.findIndex(t => t.id === tutor.id)
+    );
+    
+    console.log('✅ Tutores únicos encontrados:', uniqueTutors.length);
+    return uniqueTutors;
+    
+  } catch (error) {
+    console.error('❌ Error buscando tutores:', error);
+    return [];
+  }
+}
 
-  // Conectar con el backend para obtener tutores reales basados en disponibilidad
-  if (typeof BackendAPI !== 'undefined' && BackendAPI.searchTutorsByAvailability) {
-    BackendAPI.searchTutorsByAvailability({ area, modality, day, time, duration })
-      .then((tutors) => {
-        displayTutors(tutors);
-        showNotification(`Se encontraron ${tutors.length} tutores disponibles`, 'success');
-      })
-      .catch((error) => {
-        console.error('Error buscando tutores:', error);
-        showNotification('Error al buscar tutores. Inténtalo de nuevo.', 'error');
-        displayTutors([]); // Mostrar lista vacía
-      });
-  } else {
-    // Fallback: obtener tutores basados en disponibilidades reales
-    setTimeout(() => {
-      const availableTutors = getAvailableTutors({ area, modality, day, time, duration });
-      displayTutors(availableTutors);
-      showNotification(`Se encontraron ${availableTutors.length} tutores disponibles`, 'success');
-    }, 1500);
+// Función para verificar si un tutor coincide con los criterios de búsqueda
+function matchesSearchCriteria(tutorData, criteria) {
+  try {
+    // Verificar materia
+    if (criteria.subject && tutorData.subject) {
+      const tutorSubject = tutorData.subject.toLowerCase();
+      const searchSubject = criteria.subject.toLowerCase();
+      
+      if (tutorSubject !== searchSubject && !tutorSubject.includes(searchSubject)) {
+        return false;
+      }
+    }
+    
+    // Verificar fecha
+    if (criteria.date && tutorData.date) {
+      if (tutorData.date !== criteria.date) {
+        return false;
+      }
+    }
+    
+    // Verificar horario
+    if (criteria.startTime && tutorData.startTime) {
+      if (tutorData.startTime !== criteria.startTime) {
+        return false;
+      }
+    }
+    
+    if (criteria.endTime && tutorData.endTime) {
+      if (tutorData.endTime !== criteria.endTime) {
+        return false;
+      }
+    }
+    
+    // Verificar modalidad
+    if (criteria.modality && tutorData.modality) {
+      const tutorModality = tutorData.modality.toLowerCase();
+      const searchModality = criteria.modality.toLowerCase();
+      
+      if (tutorModality !== searchModality) {
+        return false;
+      }
+    }
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Error verificando criterios:', error);
+    return false;
+  }
+}
+
+// Función para convertir datos de tutor a formato de visualización
+function convertToTutorFormat(tutorData) {
+  try {
+    // Determinar si es disponibilidad o clase
+    const isAvailability = tutorData.hasOwnProperty('startTime') && tutorData.hasOwnProperty('endTime');
+    
+    if (isAvailability) {
+      // Es disponibilidad de tutor
+      return {
+        id: `avail_${tutorData.id || Date.now()}`,
+        name: getTutorNameBySubject(tutorData.subject),
+        specialty: tutorData.subject,
+        rating: 4.5,
+        reviewsCount: Math.floor(Math.random() * 20) + 5,
+        available: true,
+        nextAvailable: 'Disponible ahora',
+        modalities: [tutorData.modality],
+        startTime: tutorData.startTime,
+        endTime: tutorData.endTime,
+        duration: calculateDuration(tutorData.startTime, tutorData.endTime),
+        password: '123456',
+        date: tutorData.date,
+        isRealAvailability: true,
+        location: tutorData.location || (tutorData.modality === 'Presencial' ? 'Aula Principal' : 'Zoom')
+      };
+    } else {
+      // Es clase creada por tutor
+      return {
+        id: tutorData.id,
+        name: tutorData.name,
+        specialty: tutorData.specialty,
+        rating: tutorData.rating,
+        reviewsCount: tutorData.reviewsCount,
+        available: tutorData.available,
+        nextAvailable: tutorData.nextAvailable,
+        modalities: tutorData.modalities,
+        startTime: tutorData.startTime,
+        endTime: tutorData.endTime,
+        duration: tutorData.duration,
+        password: tutorData.password,
+        date: tutorData.date,
+        isRealClass: true,
+        location: tutorData.modalities[0] === 'Presencial' ? 'Aula Principal' : 'Zoom'
+      };
+    }
+    
+  } catch (error) {
+    console.error('❌ Error convirtiendo formato de tutor:', error);
+    return null;
+  }
+}
+
+// Función para obtener nombre de tutor por materia
+function getTutorNameBySubject(subject) {
+  const tutorNames = {
+    'matematicas': 'MTRMatematicas',
+    'fisica': 'MTRFisica',
+    'quimica': 'MTRQuimica',
+    'biologia': 'MTRBiologia',
+    'espanol': 'MTREspanol',
+    'historia': 'MTRHistoria',
+    'ingles': 'MTRIngles',
+    'geografia': 'MTRGeografia',
+    'filosofia': 'MTRFilosofia',
+    'literatura': 'MTRLiteratura',
+    'programacion': 'MTRProgramacion',
+    'estadistica': 'MTREstadistica',
+    'calculo': 'MTRCalculo',
+    'algebra': 'MTRAlgebra'
+  };
+  
+  return tutorNames[subject.toLowerCase()] || `MTR${subject.charAt(0).toUpperCase() + subject.slice(1)}`;
+}
+
+// Función simple para mostrar tutores de cualquier materia
+function showTutorsBySubject(subject) {
+  console.log('🎯 Mostrando tutores de:', subject);
+  
+  const tutorsResults = document.querySelector('.tutors-results');
+  if (!tutorsResults) {
+    console.error('❌ No se encontró el contenedor .tutors-results');
+    return;
+  }
+
+  // Todos los tutores disponibles por materia - NOMBRES ÚNICOS CON FORMATO MTR
+  // Obtener clases creadas por tutores desde localStorage
+  const tutorClasses = JSON.parse(localStorage.getItem('tutorClasses') || '[]');
+  
+  // Combinar tutores existentes con clases creadas por tutores
+  const allTutors = [
+    // MATEMÁTICAS
+    {
+      id: 'math-1',
+      name: 'MTRMatematicas',
+      specialty: 'Matemáticas',
+      rating: 4.8,
+      reviewsCount: 24,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '10:00',
+      endTime: '11:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-20'
+    },
+    
+    // FÍSICA
+    {
+      id: 'phy-1',
+      name: 'MTRFisica',
+      specialty: 'Física',
+      rating: 4.6,
+      reviewsCount: 18,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '14:00',
+      endTime: '15:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-21'
+    },
+    
+    // QUÍMICA
+    {
+      id: 'chem-1',
+      name: 'MTRQuimica',
+      specialty: 'Química',
+      rating: 4.9,
+      reviewsCount: 31,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Virtual'],
+      startTime: '16:00',
+      endTime: '17:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-22'
+    },
+    
+    // BIOLOGÍA
+    {
+      id: 'bio-1',
+      name: 'MTRBiologia',
+      specialty: 'Biología',
+      rating: 4.7,
+      reviewsCount: 23,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '09:00',
+      endTime: '10:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-23'
+    },
+    
+    // ESPAÑOL
+    {
+      id: 'esp-1',
+      name: 'MTREspanol',
+      specialty: 'Español',
+      rating: 4.8,
+      reviewsCount: 29,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '11:00',
+      endTime: '12:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-24'
+    },
+    
+    // HISTORIA
+    {
+      id: 'hist-1',
+      name: 'MTRHistoria',
+      specialty: 'Historia',
+      rating: 4.7,
+      reviewsCount: 26,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Virtual'],
+      startTime: '15:00',
+      endTime: '16:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-25'
+    },
+    
+    // INGLÉS
+    {
+      id: 'eng-1',
+      name: 'MTRIngles',
+      specialty: 'Inglés',
+      rating: 4.9,
+      reviewsCount: 32,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Virtual'],
+      startTime: '10:00',
+      endTime: '11:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-26'
+    },
+    
+    // GEOGRAFÍA
+    {
+      id: 'geo-1',
+      name: 'MTRGeografia',
+      specialty: 'Geografía',
+      rating: 4.6,
+      reviewsCount: 20,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '13:00',
+      endTime: '14:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-27'
+    },
+    
+    // FILOSOFÍA
+    {
+      id: 'fil-1',
+      name: 'MTRFilosofia',
+      specialty: 'Filosofía',
+      rating: 4.8,
+      reviewsCount: 26,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '16:00',
+      endTime: '17:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-28'
+    },
+    
+    // LITERATURA
+    {
+      id: 'lit-1',
+      name: 'MTRLiteratura',
+      specialty: 'Literatura',
+      rating: 4.9,
+      reviewsCount: 30,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Virtual'],
+      startTime: '09:00',
+      endTime: '10:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-29'
+    },
+    
+    // PROGRAMACIÓN
+    {
+      id: 'prog-1',
+      name: 'MTRProgramacion',
+      specialty: 'Programación',
+      rating: 4.8,
+      reviewsCount: 28,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Virtual'],
+      startTime: '14:00',
+      endTime: '15:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-30'
+    },
+    
+    // ESTADÍSTICA
+    {
+      id: 'est-1',
+      name: 'MTREstadistica',
+      specialty: 'Estadística',
+      rating: 4.7,
+      reviewsCount: 25,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '16:00',
+      endTime: '17:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-31'
+    },
+    
+    // CÁLCULO
+    {
+      id: 'calc-1',
+      name: 'MTRCalculo',
+      specialty: 'Cálculo',
+      rating: 4.8,
+      reviewsCount: 27,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial'],
+      startTime: '10:00',
+      endTime: '11:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-01-29'
+    },
+    
+    // ÁLGEBRA
+    {
+      id: 'alg-1',
+      name: 'MTRAlgebra',
+      specialty: 'Álgebra',
+      rating: 4.7,
+      reviewsCount: 23,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Virtual'],
+      startTime: '15:00',
+      endTime: '16:00',
+      duration: '1hr',
+      password: '123456',
+      date: '2024-02-01'
+    }
+  ];
+  
+  // Agregar clases creadas por tutores
+  tutorClasses.forEach(tutorClass => {
+    // Convertir clase de tutor a formato de tutor para mostrar
+    const tutorFromClass = {
+      id: tutorClass.id,
+      name: tutorClass.name,
+      specialty: tutorClass.specialty,
+      rating: tutorClass.rating,
+      reviewsCount: tutorClass.reviewsCount,
+      available: tutorClass.available,
+      nextAvailable: tutorClass.nextAvailable,
+      modalities: tutorClass.modalities,
+      startTime: tutorClass.startTime,
+      endTime: tutorClass.endTime,
+      duration: tutorClass.duration,
+      password: tutorClass.password,
+      isNewClass: true // Marcar como clase nueva
+    };
+    
+    allTutors.push(tutorFromClass);
+  });
+
+  // Filtrar tutores por materia - UN TUTOR POR MATERIA
+  console.log('🔍 Iniciando filtrado para materia:', subject);
+  console.log('📊 Total de tutores disponibles:', allTutors.length);
+  
+  // Buscar el tutor específico para la materia
+  const filteredTutors = allTutors.filter(tutor => {
+    const tutorSubject = tutor.specialty.toLowerCase();
+    const searchSubject = subject.toLowerCase();
+    
+    // Coincidencia exacta o con variaciones comunes
+    const matches = tutorSubject === searchSubject || 
+                   (searchSubject === 'fisica' && tutorSubject === 'física') ||
+                   (searchSubject === 'matematicas' && tutorSubject === 'matemáticas') ||
+                   (searchSubject === 'quimica' && tutorSubject === 'química') ||
+                   (searchSubject === 'biologia' && tutorSubject === 'biología') ||
+                   (searchSubject === 'espanol' && tutorSubject === 'español') ||
+                   (searchSubject === 'ingles' && tutorSubject === 'inglés') ||
+                   (searchSubject === 'geografia' && tutorSubject === 'geografía') ||
+                   (searchSubject === 'filosofia' && tutorSubject === 'filosofía') ||
+                   (searchSubject === 'programacion' && tutorSubject === 'programación') ||
+                   (searchSubject === 'estadistica' && tutorSubject === 'estadística') ||
+                   (searchSubject === 'calculo' && tutorSubject === 'cálculo') ||
+                   (searchSubject === 'algebra' && tutorSubject === 'álgebra');
+    
+    if (matches) {
+      console.log(`✅ Tutor encontrado: ${tutor.name} (${tutor.specialty})`);
+    }
+    
+    return matches;
+  });
+  
+  console.log('📊 Tutores después del filtro:', filteredTutors.length);
+
+  console.log('📊 Mostrando', filteredTutors.length, 'tutores de', subject);
+
+  if (filteredTutors.length === 0) {
+    tutorsResults.innerHTML = `
+      <div class="no-tutors-message">
+        <div class="no-tutors-icon">
+          <i class="fas fa-user-tie"></i>
+        </div>
+        <h3>No hay tutores disponibles</h3>
+        <p>No se encontraron tutores de ${subject}.</p>
+        <button class="btn btn-outline" onclick="searchTutors()">
+          <i class="fas fa-refresh"></i> Intentar de nuevo
+        </button>
+      </div>
+    `;
+    showNotification(`No se encontraron tutores de ${subject}`, 'warning');
+    return;
+  }
+
+  // Generar HTML de las tarjetas de tutores
+  tutorsResults.innerHTML = filteredTutors.map(tutor => `
+        <div class="tutor-card ${tutor.isRealAvailability ? 'real-availability' : ''} ${tutor.isRealClass ? 'real-class' : ''}" data-tutor-id="${tutor.id}">
+            <div class="tutor-avatar">
+              <i class="fas fa-user-tie"></i>
+            </div>
+                <div class="tutor-info">
+                  <h4>${tutor.name}</h4>
+                  <div class="tutor-details">
+                    <div class="tutor-specialty-section">
+                      <p class="tutor-specialty">${tutor.specialty}</p>
+                    </div>
+                    <div class="tutor-date">
+                      <span class="session-date"><i class="fas fa-calendar-alt"></i> ${formatDate(tutor.date)}</span>
+                    </div>
+                    <div class="tutor-schedule">
+                      <span class="schedule-time"><i class="fas fa-clock"></i> ${tutor.startTime} - ${tutor.endTime}</span>
+                    </div>
+                    <div class="tutor-availability">
+                      <span class="next-available">${tutor.nextAvailable}</span>
+                    </div>
+                    <div class="tutor-modalities">
+                      <span class="modality-tag ${tutor.modalities[0].toLowerCase()}">${tutor.modalities[0]}</span>
+                    </div>
+                    <div class="tutor-duration">
+                      <span class="duration">${tutor.duration}</span>
+                    </div>
+                    <div class="tutor-rating">
+                      <div class="stars">
+                        ${'★'.repeat(Math.floor(tutor.rating))}${'☆'.repeat(5 - Math.floor(tutor.rating))}
+                      </div>
+                      <span class="rating-text">${tutor.rating} (${tutor.reviewsCount} reseñas)</span>
+                    </div>
+                    ${tutor.isRealAvailability ? '<span class="real-availability-badge">Disponibilidad Real</span>' : ''}
+                    ${tutor.isRealClass ? '<span class="real-class-badge">Clase Real</span>' : ''}
+                  </div>
+              <div class="tutor-actions">
+                <button class="btn btn-primary" onclick="bookTutor('${tutor.id}')">
+                  <i class="fas fa-calendar-plus"></i> Reservar Sesión
+                </button>
+                <button class="btn btn-outline" onclick="viewTutorProfile('${tutor.id}')">
+                  <i class="fas fa-eye"></i> Ver Perfil
+                </button>
+              </div>
+            </div>
+          </div>
+  `).join('');
+
+  showNotification(`Se encontraron ${filteredTutors.length} tutor${filteredTutors.length > 1 ? 'es' : ''} de ${subject}`, 'success');
+}
+
+// Función para reservar tutor
+function bookTutor(tutorId) {
+  console.log('📅 Reservando tutor:', tutorId);
+  showNotification('Función de reserva en desarrollo', 'info');
+}
+
+// Función para ver perfil del tutor
+function viewTutorProfile(tutorId) {
+  console.log('👁️ Viendo perfil del tutor:', tutorId);
+  showNotification('Función de perfil en desarrollo', 'info');
+}
+
+// Función para mostrar tutores de ejemplo cuando no hay conexión al backend
+function displayFallbackTutors(searchCriteria = {}) {
+  console.log('🎭 displayFallbackTutors llamado con criterios:', searchCriteria);
+  
+  const tutorsResults = document.querySelector('.tutors-results');
+  if (!tutorsResults) {
+    console.error('❌ No se encontró el contenedor .tutors-results');
+    return;
+  }
+
+  // Tutores de ejemplo - SOLO MATEMÁTICAS para simplificar
+  const allTutors = [
+    {
+      id: 'demo-1',
+      name: 'Dr. María González',
+      specialty: 'Matemáticas',
+      rating: 4.8,
+      reviewsCount: 24,
+      available: true,
+      nextAvailable: 'Disponible ahora',
+      modalities: ['Presencial', 'Virtual'],
+      price: 150,
+      availabilities: [
+        { date: '2025-01-03', startTime: '09:00', endTime: '11:00', modality: 'Presencial' },
+        { date: '2025-01-03', startTime: '14:00', endTime: '16:00', modality: 'Virtual' }
+      ]
+    },
+    {
+      id: 'demo-2',
+      name: 'Prof. Luis Hernández',
+      specialty: 'Matemáticas',
+      rating: 4.7,
+      reviewsCount: 22,
+      available: true,
+      nextAvailable: 'Esta semana',
+      modalities: ['Presencial'],
+      price: 140,
+      availabilities: [
+        { date: '2025-01-05', startTime: '08:00', endTime: '10:00', modality: 'Presencial' }
+      ]
+    },
+    {
+      id: 'demo-3',
+      name: 'Dra. Carmen López',
+      specialty: 'Matemáticas',
+      rating: 4.9,
+      reviewsCount: 35,
+      available: true,
+      nextAvailable: 'Próxima semana',
+      modalities: ['Virtual'],
+      price: 160,
+      availabilities: [
+        { date: '2025-01-06', startTime: '15:00', endTime: '17:00', modality: 'Virtual' }
+      ]
+    },
+    {
+      id: 'demo-4',
+      name: 'Prof. Roberto Silva',
+      specialty: 'Matemáticas',
+      rating: 4.5,
+      reviewsCount: 19,
+      available: true,
+      nextAvailable: 'Esta semana',
+      modalities: ['Presencial', 'Virtual'],
+      price: 130,
+      availabilities: [
+        { date: '2025-01-07', startTime: '09:00', endTime: '11:00', modality: 'Presencial' },
+        { date: '2025-01-08', startTime: '14:00', endTime: '16:00', modality: 'Virtual' }
+      ]
+    },
+    {
+      id: 'demo-5',
+      name: 'Dra. Patricia Vega',
+      specialty: 'Matemáticas',
+      rating: 4.8,
+      reviewsCount: 28,
+      available: true,
+      nextAvailable: 'Mañana',
+      modalities: ['Presencial'],
+      price: 170,
+      availabilities: [
+        { date: '2025-01-04', startTime: '10:00', endTime: '12:00', modality: 'Presencial' }
+      ]
+    }
+  ];
+
+  console.log('📊 Total de tutores disponibles:', allTutors.length);
+
+  // Filtrar tutores según los criterios de búsqueda
+  let filteredTutors = allTutors;
+
+  // Filtrar por materia
+  if (searchCriteria.subject) {
+    console.log('🔍 Filtrando por materia:', searchCriteria.subject);
+    
+    filteredTutors = filteredTutors.filter(tutor => {
+      const tutorSubject = tutor.specialty.toLowerCase();
+      const searchSubject = searchCriteria.subject.toLowerCase();
+      
+      console.log(`📚 Comparando: "${tutorSubject}" vs "${searchSubject}"`);
+      
+      // Coincidencia exacta o que contenga la palabra
+      const matches = tutorSubject === searchSubject || tutorSubject.includes(searchSubject);
+      console.log(`📚 Tutor ${tutor.name} (${tutor.specialty}) - Coincide: ${matches}`);
+      
+      return matches;
+    });
+    
+    console.log('📊 Tutores después del filtro de materia:', filteredTutors.length);
+  }
+
+  // Filtrar por modalidad
+  if (searchCriteria.modality) {
+    filteredTutors = filteredTutors.filter(tutor => 
+      tutor.modalities.some(mod => 
+        mod.toLowerCase() === searchCriteria.modality.toLowerCase()
+      )
+    );
+  }
+
+  // Filtrar por fecha
+  if (searchCriteria.date) {
+    filteredTutors = filteredTutors.filter(tutor => 
+      tutor.availabilities.some(avail => avail.date === searchCriteria.date)
+    );
+  }
+
+  // Filtrar por hora de inicio
+  if (searchCriteria.startTime) {
+    filteredTutors = filteredTutors.filter(tutor => 
+      tutor.availabilities.some(avail => avail.startTime === searchCriteria.startTime)
+    );
+  }
+
+  console.log('🎭 Mostrando tutores filtrados:', {
+    criterios: searchCriteria,
+    total: allTutors.length,
+    filtrados: filteredTutors.length
+  });
+
+  // Si no hay tutores que coincidan con los filtros, mostrar mensaje específico
+  if (filteredTutors.length === 0 && Object.keys(searchCriteria).some(key => searchCriteria[key])) {
+    console.log('⚠️ No hay tutores que coincidan con los criterios');
+    tutorsResults.innerHTML = `
+      <div class="no-tutors-message">
+        <div class="no-tutors-icon">
+          <i class="fas fa-user-tie"></i>
+        </div>
+        <h3>No hay tutores disponibles</h3>
+        <p>No se encontraron tutores que coincidan con los criterios seleccionados.</p>
+        <button class="btn btn-outline" onclick="searchTutors()">
+          <i class="fas fa-refresh"></i> Intentar de nuevo
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  // Mostrar tutores filtrados usando displayTutors
+  console.log('✅ Mostrando tutores filtrados:', filteredTutors.length);
+  displayTutors(filteredTutors);
+}
+
+// Función para calcular duración entre dos horas
+// Función para formatear fechas
+function formatDate(dateString) {
+  if (!dateString) return 'Fecha no especificada';
+  
+  try {
+    const date = new Date(dateString + 'T00:00:00');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('es-ES', options);
+  } catch (error) {
+    console.error('Error formateando fecha:', error);
+    return dateString;
+  }
+}
+
+function calculateDuration(startTime, endTime) {
+  // Validar que ambos parámetros existan y sean válidos
+  if (!startTime || !endTime || startTime.trim() === '' || endTime.trim() === '') {
+    return '';
+  }
+  
+  // Validar formato de hora (HH:MM)
+  const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+    console.warn('Formato de hora inválido:', { startTime, endTime });
+    return '';
+  }
+  
+  try {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    // Validar que los números sean válidos
+    if (isNaN(startHour) || isNaN(startMin) || isNaN(endHour) || isNaN(endMin)) {
+      console.warn('Valores de hora no numéricos:', { startHour, startMin, endHour, endMin });
+      return '';
+    }
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    const durationMinutes = endMinutes - startMinutes;
+    
+    if (durationMinutes <= 0) return '0 min';
+    
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    
+    if (hours === 0) {
+      return `${minutes} min`;
+    } else if (minutes === 0) {
+      return `${hours}hr`;
+    } else {
+      return `${hours}hr ${minutes}min`;
+    }
+  } catch (error) {
+    console.error('Error calculando duración:', error);
+    return '';
   }
 }
 
 // Función para obtener tutores disponibles basados en disponibilidades reales
 function getAvailableTutors(filters) {
   try {
+    console.log('🔍 Buscando tutores disponibles con filtros:', filters);
+    
     // Obtener disponibilidades de tutores desde localStorage
-    const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability')) || [];
-    const tutors = JSON.parse(localStorage.getItem('usuarios')) || [];
+    let tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability')) || [];
+    let tutors = JSON.parse(localStorage.getItem('usuarios')) || [];
+    
+    console.log('📊 Disponibilidades encontradas:', tutorAvailabilities.length);
+    console.log('👥 Usuarios encontrados:', tutors.length);
+    
+    // Si no hay datos, crear datos de ejemplo
+  // Solo usar datos reales de usuarios logueados
+  if (tutorAvailabilities.length === 0) {
+    console.log('⚠️ No hay disponibilidades configuradas por tutores reales');
+    console.log('🔧 Creando datos de ejemplo temporalmente para diagnóstico...');
+    
+    // Crear datos de ejemplo temporalmente para diagnóstico
+    createSampleDataIfNeeded();
+    
+    // Recargar datos después de crear los de ejemplo
+    tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability')) || [];
+    tutors = JSON.parse(localStorage.getItem('usuarios')) || [];
+    console.log('📊 Disponibilidades después de crear ejemplo:', tutorAvailabilities.length);
+    console.log('👥 Usuarios después de crear ejemplo:', tutors.length);
+  }
+  
+  if (tutors.length === 0) {
+    console.log('⚠️ No hay usuarios registrados');
+    console.log('🔧 Creando usuarios de ejemplo temporalmente para diagnóstico...');
+    createSampleDataIfNeeded();
+    
+    // Recargar datos después de crear los de ejemplo
+    tutors = JSON.parse(localStorage.getItem('usuarios')) || [];
+    console.log('👥 Usuarios después de crear ejemplo:', tutors.length);
+  }
     
     // Filtrar tutores por rol
     const tutorUsers = tutors.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+    console.log('🎓 Tutores con rol correcto:', tutorUsers.length);
     
     // Crear lista de tutores disponibles
     const availableTutors = [];
     
-    tutorAvailabilities.forEach(availability => {
-      // Verificar si coincide con los filtros
-      if (filters.area && availability.subject !== filters.area) return;
-      if (filters.modality && availability.modality !== filters.modality) return;
-      if (filters.time && availability.startTime !== filters.time) return;
+    // Aplicar filtros específicos que coinciden con los campos del tutor
+    console.log('🔍 Aplicando filtros a', tutorAvailabilities.length, 'disponibilidades');
+    console.log('🔍 Filtros aplicados:', filters);
+    
+    tutorAvailabilities.forEach((availability, index) => {
+      console.log(`🔍 Verificando disponibilidad ${index + 1}:`, availability);
       
-      // Buscar el tutor correspondiente
-      const tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
-      if (!tutor) return;
+      // Verificar si coincide con los filtros del alumno
+      let matches = true;
+      
+      // Filtro por fecha (solo si se especifica)
+      if (filters.date && availability.date !== filters.date) {
+        console.log('❌ Fecha no coincide:', availability.date, 'vs', filters.date);
+        matches = false;
+      }
+      
+      // Filtro por materia (solo si se especifica)
+      if (filters.subject && availability.subject !== filters.subject) {
+        console.log('❌ Materia no coincide:', availability.subject, 'vs', filters.subject);
+        matches = false;
+      }
+      
+      // Filtro por hora de inicio (solo si se especifica)
+      if (filters.startTime && availability.startTime !== filters.startTime) {
+        console.log('❌ Hora inicio no coincide:', availability.startTime, 'vs', filters.startTime);
+        matches = false;
+      }
+      
+      // Filtro por hora de fin (solo si se especifica)
+      if (filters.endTime && availability.endTime !== filters.endTime) {
+        console.log('❌ Hora fin no coincide:', availability.endTime, 'vs', filters.endTime);
+        matches = false;
+      }
+      
+      // Filtro por modalidad (solo si se especifica)
+      if (filters.modality && availability.modality !== filters.modality) {
+        console.log('❌ Modalidad no coincide:', availability.modality, 'vs', filters.modality);
+        matches = false;
+      }
+      
+      // Si no hay filtros específicos, mostrar todas las disponibilidades
+      if (!filters.date && !filters.subject && !filters.startTime && !filters.endTime && !filters.modality) {
+        console.log('📋 Sin filtros específicos, mostrando todas las disponibilidades');
+        matches = true;
+      }
+      
+      if (!matches) {
+        console.log(`❌ Disponibilidad ${index + 1} no coincide con filtros`);
+        return;
+      }
+      
+      console.log(`✅ Disponibilidad ${index + 1} coincide con filtros`);
+      
+      // Buscar el tutor correspondiente por nombre o ID
+      console.log(`🔍 Buscando tutor para disponibilidad ${index + 1}:`, availability.tutor);
+      let tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
+      
+      // Si no se encuentra por nombre, buscar por ID
+      if (!tutor && availability.tutorId) {
+        console.log(`🔍 Buscando tutor por ID:`, availability.tutorId);
+        tutor = tutorUsers.find(t => t.id === availability.tutorId);
+      }
+      
+      // Si no se encuentra por ID, buscar por email
+      if (!tutor && availability.tutorEmail) {
+        console.log(`🔍 Buscando tutor por email:`, availability.tutorEmail);
+        tutor = tutorUsers.find(t => t.email === availability.tutorEmail);
+      }
+      
+      if (!tutor) {
+        console.log(`❌ Tutor NO encontrado para disponibilidad ${index + 1}:`, availability.tutor, 'ID:', availability.tutorId);
+        console.log(`📋 Tutores disponibles:`, tutorUsers.map(t => ({ id: t.id, nombre: t.nombreCompleto, email: t.email })));
+        return;
+      }
+      
+      console.log(`✅ Tutor encontrado para disponibilidad ${index + 1}:`, tutor.nombreCompleto);
       
       // Verificar si ya existe en la lista
       const existingTutor = availableTutors.find(t => t.id === tutor.id);
       if (existingTutor) {
         // Agregar disponibilidad al tutor existente
         existingTutor.availabilities.push(availability);
+        console.log('➕ Agregada disponibilidad al tutor existente:', tutor.nombreCompleto);
       } else {
         // Crear nuevo tutor con disponibilidad
         availableTutors.push({
           id: tutor.id,
           name: tutor.nombreCompleto,
           email: tutor.email,
+          specialty: availability.subject,
           specialties: [availability.subject],
           rating: 4.5,
+          reviewsCount: Math.floor(Math.random() * 20) + 5,
           sessionsCompleted: Math.floor(Math.random() * 50) + 10,
           studentsHelped: Math.floor(Math.random() * 30) + 5,
+          available: true,
+          nextAvailable: formatNextAvailable(availability),
+          modalities: [availability.modality],
+          price: null,
           availabilities: [availability]
         });
+        console.log('🆕 Creado nuevo tutor disponible:', tutor.nombreCompleto);
       }
     });
     
+    console.log('📊 RESUMEN DE BÚSQUEDA:');
+    console.log('- Disponibilidades verificadas:', tutorAvailabilities.length);
+    console.log('- Tutores disponibles encontrados:', availableTutors.length);
+    console.log('- Tutores en la lista final:', availableTutors.map(t => t.name));
+    
+    if (availableTutors.length === 0) {
+      console.log('❌ NO SE ENCONTRARON TUTORES');
+      console.log('🔍 Posibles causas:');
+      console.log('1. No hay disponibilidades configuradas');
+      console.log('2. Los filtros no coinciden con ninguna disponibilidad');
+      console.log('3. Los tutores no están correctamente enlazados');
+      console.log('4. Los datos no están guardados correctamente');
+    }
+    
     return availableTutors;
   } catch (error) {
-    console.error('Error obteniendo tutores disponibles:', error);
+    console.error('❌ Error obteniendo tutores disponibles:', error);
     return [];
+  }
+}
+
+// Función auxiliar para formatear la próxima disponibilidad
+function formatNextAvailable(availability) {
+  try {
+    const date = new Date(availability.date);
+    const dayName = date.toLocaleDateString('es-ES', { weekday: 'long' });
+    const time = availability.startTime;
+    return `${dayName} ${time}`;
+  } catch (error) {
+    return 'Próximamente';
   }
 }
 
 // Función para mostrar los tutores obtenidos del backend
 function displayTutors(tutors) {
+  console.log('🎨 displayTutors llamado con:', tutors.length, 'tutores');
+  
   const tutorsResults = document.querySelector('.tutors-results');
 
   if (!tutorsResults) {
@@ -1124,6 +2108,7 @@ function displayTutors(tutors) {
   }
 
   if (tutors.length === 0) {
+    console.log('⚠️ No hay tutores para mostrar');
     tutorsResults.innerHTML = `
             <div class="no-tutors-message">
                 <div class="no-tutors-icon">
@@ -1139,10 +2124,17 @@ function displayTutors(tutors) {
     return;
   }
 
+  console.log('🎨 Mostrando', tutors.length, 'tutores en la interfaz');
+
   // Generar tarjetas de tutores dinámicamente
   tutorsResults.innerHTML = tutors
     .map(
-      (tutor) => `
+      (tutor) => {
+        // Obtener información de disponibilidad
+        const availabilities = tutor.availabilities || [];
+        const nextAvailability = availabilities.length > 0 ? availabilities[0] : null;
+        
+        return `
         <div class="tutor-card" data-tutor-id="${tutor.id}">
             <div class="tutor-avatar">
                 <i class="fas fa-user-tie"></i>
@@ -1166,6 +2158,15 @@ function displayTutors(tutors) {
                     <div class="tutor-modalities">
                         ${tutor.modalities ? tutor.modalities.map((modality) => `<span class="modality-badge ${modality.toLowerCase()}">${modality}</span>`).join('') : ''}
                     </div>
+                    <div class="tutor-schedule-info">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="schedule-text">
+                            ${availabilities.length > 0 ? 
+                              `${availabilities.length} horario${availabilities.length > 1 ? 's' : ''} disponible${availabilities.length > 1 ? 's' : ''}` : 
+                              'Sin horarios configurados'
+                            }
+                        </span>
+                    </div>
                     <div class="tutor-price">
                         <span class="price">${tutor.price ? `$${tutor.price}/hora` : 'Precio no disponible'}</span>
                     </div>
@@ -1178,9 +2179,15 @@ function displayTutors(tutors) {
                 <button class="btn btn-outline" onclick="viewTutorProfile('${tutor.id}')">
                     <i class="fas fa-user"></i> Ver Perfil
                 </button>
+                ${availabilities.length > 0 ? `
+                <button class="btn btn-info" onclick="showTutorAvailabilityDetails('${tutor.id}')">
+                    <i class="fas fa-calendar-alt"></i> Ver Horarios
+                </button>
+                ` : ''}
             </div>
         </div>
-    `
+    `;
+      }
     )
     .join('');
 }
@@ -1297,6 +2304,8 @@ function toggleLocationField(selectElement) {
 }
 
 function bookTutor(tutorId) {
+  console.log('📅 Solicitando sesión con tutor:', tutorId);
+  
   // Marcar el tutor como seleccionado
   document.querySelectorAll('.tutor-card').forEach(card => {
     card.classList.remove('selected');
@@ -1311,27 +2320,7 @@ function bookTutor(tutorId) {
   if (typeof BackendAPI !== 'undefined' && BackendAPI.getTutorProfile) {
     BackendAPI.getTutorProfile(tutorId)
       .then((tutorData) => {
-        const selectedTutorInput = document.getElementById('selectedTutor');
-        if (selectedTutorInput) {
-          selectedTutorInput.value = tutorData.name || '';
-        }
-        
-        // Crear input hidden con el ID del tutor
-        let hiddenInput = document.getElementById('selectedTutorId');
-        if (!hiddenInput) {
-          hiddenInput = document.createElement('input');
-          hiddenInput.type = 'hidden';
-          hiddenInput.id = 'selectedTutorId';
-          document.getElementById('bookingForm').appendChild(hiddenInput);
-        }
-        hiddenInput.value = tutorId;
-        
-        // Mostrar formulario
-        const bookingSection = document.getElementById('bookingSection');
-        if (bookingSection) {
-          bookingSection.style.display = 'block';
-          bookingSection.scrollIntoView({ behavior: 'smooth' });
-        }
+        setupBookingFormWithTutorData(tutorId, tutorData);
       })
       .catch((error) => {
         console.error('Error obteniendo datos del tutor:', error);
@@ -1343,9 +2332,19 @@ function bookTutor(tutorId) {
     const tutor = tutors.find(t => t.id === tutorId);
     
     if (tutor) {
+      setupBookingFormWithTutorData(tutorId, tutor);
+    } else {
+      showNotification('Tutor no encontrado', 'error');
+      return;
+    }
+  }
+}
+
+// Función auxiliar para configurar el formulario de reserva con datos del tutor
+function setupBookingFormWithTutorData(tutorId, tutorData) {
       const selectedTutorInput = document.getElementById('selectedTutor');
       if (selectedTutorInput) {
-        selectedTutorInput.value = tutor.nombreCompleto || '';
+    selectedTutorInput.value = tutorData.name || tutorData.nombreCompleto || '';
       }
       
       // Crear input hidden con el ID del tutor
@@ -1357,6 +2356,41 @@ function bookTutor(tutorId) {
         document.getElementById('bookingForm').appendChild(hiddenInput);
       }
       hiddenInput.value = tutorId;
+  
+  // Obtener disponibilidades del tutor para pre-llenar el formulario
+  const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability')) || [];
+  const tutorAvailability = tutorAvailabilities.find(av => av.tutor === (tutorData.name || tutorData.nombreCompleto));
+  
+  if (tutorAvailability) {
+    console.log('📋 Configurando formulario con disponibilidad del tutor:', tutorAvailability);
+    
+    // Pre-llenar campos del formulario con la disponibilidad del tutor
+    const areaSelect = document.querySelector('select[name="area"]');
+    if (areaSelect && tutorAvailability.subject) {
+      areaSelect.value = tutorAvailability.subject;
+    }
+    
+    const modalitySelect = document.querySelector('select[name="modality"]');
+    if (modalitySelect && tutorAvailability.modality) {
+      modalitySelect.value = tutorAvailability.modality.toLowerCase();
+    }
+    
+    const timeSelect = document.querySelector('select[name="time"]');
+    if (timeSelect && tutorAvailability.startTime) {
+      timeSelect.value = tutorAvailability.startTime;
+    }
+    
+    // Configurar fecha mínima
+    const dateInput = document.querySelector('input[name="date"]');
+    if (dateInput) {
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.min = today;
+      
+      // Si la disponibilidad es para hoy o futuro, sugerir esa fecha
+      if (tutorAvailability.date >= today) {
+        dateInput.value = tutorAvailability.date;
+      }
+    }
     }
     
     // Mostrar formulario
@@ -1364,6 +2398,10 @@ function bookTutor(tutorId) {
     if (bookingSection) {
       bookingSection.style.display = 'block';
       bookingSection.scrollIntoView({ behavior: 'smooth' });
+    
+    // Mostrar notificación informativa
+    if (tutorAvailability) {
+      showNotification(`Formulario pre-configurado con la disponibilidad del tutor`, 'info');
     }
   }
 }
@@ -1998,6 +3036,56 @@ function setupBookingForm() {
   
   // Cargar materias disponibles
   loadMateriasDisponibles();
+  
+  // Limpiar campo de duración al cargar
+  clearDurationField();
+  
+  // Configurar cálculo automático de duración en filtros de búsqueda
+  setupDurationCalculation();
+}
+
+// Función para limpiar el campo de duración
+function clearDurationField() {
+  const durationField = document.getElementById('durationFilter');
+  if (durationField) {
+    durationField.value = '';
+    // También limpiar cualquier valor residual que pueda estar causando NaN
+    if (durationField.value.includes('NaN') || durationField.value.includes('undefined')) {
+      durationField.value = '';
+    }
+  }
+}
+
+// Función para configurar el cálculo automático de duración
+function setupDurationCalculation() {
+  const startTimeInput = document.getElementById('startTimeFilter');
+  const endTimeInput = document.getElementById('endTimeFilter');
+  const durationInput = document.getElementById('durationFilter');
+  
+  if (startTimeInput && endTimeInput && durationInput) {
+    // Calcular duración cuando cambien las horas
+    const calculateDurationOnChange = () => {
+      const startTime = startTimeInput.value;
+      const endTime = endTimeInput.value;
+      
+      if (startTime && endTime && startTime.trim() !== '' && endTime.trim() !== '') {
+        const duration = calculateDuration(startTime, endTime);
+        durationInput.value = duration || '';
+      } else {
+        durationInput.value = '';
+      }
+    };
+    
+    startTimeInput.addEventListener('change', calculateDurationOnChange);
+    endTimeInput.addEventListener('change', calculateDurationOnChange);
+    
+    // Configurar fecha mínima
+    const today = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('dateFilter');
+    if (dateInput) {
+      dateInput.min = today;
+    }
+  }
 }
 
 // Nueva función para cargar materias disponibles
@@ -2148,32 +3236,7 @@ function createPendingSessionForStudent(sessionData) {
   }
 }
 
-// Función para calcular duración entre dos horas
-function calculateDuration(startTime, endTime) {
-  try {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-    
-    const startMinutes = startHour * 60 + startMin;
-    const endMinutes = endHour * 60 + endMin;
-    const durationMinutes = endMinutes - startMinutes;
-    
-    if (durationMinutes <= 0) return '60 min';
-    
-    const hours = Math.floor(durationMinutes / 60);
-    const minutes = durationMinutes % 60;
-    
-    if (hours === 0) {
-      return `${minutes} min`;
-    } else if (minutes === 0) {
-      return `${hours}hr`;
-    } else {
-      return `${hours}hr ${minutes}min`;
-    }
-  } catch (error) {
-    return '60 min';
-  }
-}
+// Función para obtener datos del tutor actual
 
 // Función para notificar al tutor sobre nueva sesión
 function notifyTutorNewSession(session) {
@@ -2356,7 +3419,604 @@ function getNotificationIcon(type) {
   return icons[type] || 'info-circle';
 }
 
+// ===============================================
+// FUNCIONES DE SINCRONIZACIÓN CON TUTORES
+// ===============================================
 
+// Función para sincronizar disponibilidades de tutores
+function syncTutorAvailabilities() {
+  console.log('🔄 Sincronizando disponibilidades de tutores...');
+  
+  try {
+    // Conectar con el backend para obtener disponibilidades actualizadas
+    if (typeof BackendAPI !== 'undefined' && BackendAPI.getTutorDisponibilidades) {
+      BackendAPI.getTutorDisponibilidades()
+        .then((availabilities) => {
+          console.log('📡 Disponibilidades obtenidas del backend:', availabilities.length);
+          localStorage.setItem('tutorAvailability', JSON.stringify(availabilities));
+          showNotification('Disponibilidades de tutores actualizadas', 'success');
+        })
+        .catch((error) => {
+          console.warn('⚠️ Error obteniendo disponibilidades del backend:', error);
+          // Continuar con datos locales si el backend falla
+        });
+    } else {
+      console.log('📱 Usando datos locales de disponibilidades');
+    }
+  } catch (error) {
+    console.error('❌ Error en sincronización de disponibilidades:', error);
+  }
+}
 
+// Función para escuchar cambios en disponibilidades (simulación de tiempo real)
+function listenForAvailabilityChanges() {
+  // Escuchar cambios en localStorage (simulación de comunicación en tiempo real)
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'tutorAvailability') {
+      console.log('🔄 Disponibilidades actualizadas desde otra pestaña');
+      // Recargar búsqueda si estamos en la sección de tutores
+      if (document.querySelector('.tutors-results')) {
+        searchTutors();
+      }
+    }
+  });
+  
+  // También verificar periódicamente (cada 30 segundos)
+  setInterval(() => {
+    syncTutorAvailabilities();
+  }, 30000);
+}
 
+// Función para mostrar disponibilidades específicas de un tutor
+function showTutorAvailabilityDetails(tutorId) {
+  const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability')) || [];
+  const tutorAvailability = tutorAvailabilities.filter(av => av.tutorId === tutorId);
+  
+  if (tutorAvailability.length === 0) {
+    showNotification('Este tutor no tiene disponibilidades configuradas', 'warning');
+    return;
+  }
+  
+  // Crear modal con detalles de disponibilidad
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-calendar-alt"></i> Disponibilidades del Tutor</h3>
+        <span class="close" onclick="closeAvailabilityModal()">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="availability-details">
+          ${tutorAvailability.map(av => `
+            <div class="availability-item">
+              <div class="availability-date">
+                <i class="fas fa-calendar"></i>
+                <span>${formatDate(av.date)}</span>
+              </div>
+              <div class="availability-time">
+                <i class="fas fa-clock"></i>
+                <span>${av.startTime} - ${av.endTime}</span>
+              </div>
+              <div class="availability-subject">
+                <i class="fas fa-book"></i>
+                <span>${av.subject}</span>
+              </div>
+              <div class="availability-modality">
+                <i class="fas fa-video"></i>
+                <span>${av.modality}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeAvailabilityModal()">Cerrar</button>
+        <button class="btn btn-primary" onclick="bookTutor('${tutorId}'); closeAvailabilityModal();">
+          <i class="fas fa-calendar-plus"></i> Solicitar Sesión
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+}
+
+function closeAvailabilityModal() {
+  const modal = document.querySelector('.modal-overlay');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+// Función auxiliar para formatear fechas
+function formatDate(dateString) {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (error) {
+    return dateString;
+  }
+}
+
+// Función para verificar enlace entre datos del tutor y búsqueda del alumno
+function verifyTutorStudentLink() {
+  console.log('🔗 Verificando enlace entre datos del tutor y búsqueda del alumno...');
+  
+  const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+  const tutors = JSON.parse(localStorage.getItem('usuarios') || '[]');
+  const tutorUsers = tutors.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+  
+  console.log('📊 Datos disponibles:');
+  console.log('- Disponibilidades:', tutorAvailabilities.length);
+  console.log('- Tutores:', tutorUsers.length);
+  
+  // Verificar cada disponibilidad
+  tutorAvailabilities.forEach((availability, index) => {
+    console.log(`\n🔍 Disponibilidad ${index + 1}:`, availability);
+    
+    // Buscar el tutor correspondiente
+    let tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
+    if (!tutor && availability.tutorId) {
+      tutor = tutorUsers.find(t => t.id === availability.tutorId);
+    }
+    if (!tutor && availability.tutorEmail) {
+      tutor = tutorUsers.find(t => t.email === availability.tutorEmail);
+    }
+    
+    if (tutor) {
+      console.log('✅ Tutor encontrado:', tutor);
+      console.log('🔗 Enlace correcto entre disponibilidad y tutor');
+    } else {
+      console.log('❌ Tutor NO encontrado para disponibilidad:', availability.tutor);
+      console.log('🔗 Enlace ROTO entre disponibilidad y tutor');
+    }
+  });
+  
+  // Mostrar resumen
+  const linkedAvailabilities = tutorAvailabilities.filter(availability => {
+    let tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
+    if (!tutor && availability.tutorId) {
+      tutor = tutorUsers.find(t => t.id === availability.tutorId);
+    }
+    if (!tutor && availability.tutorEmail) {
+      tutor = tutorUsers.find(t => t.email === availability.tutorEmail);
+    }
+    return tutor !== undefined;
+  });
+  
+  console.log(`\n📈 Resumen del enlace:`);
+  console.log(`- Disponibilidades totales: ${tutorAvailabilities.length}`);
+  console.log(`- Disponibilidades enlazadas: ${linkedAvailabilities.length}`);
+  console.log(`- Disponibilidades sin enlace: ${tutorAvailabilities.length - linkedAvailabilities.length}`);
+  
+  return {
+    total: tutorAvailabilities.length,
+    linked: linkedAvailabilities.length,
+    unlinked: tutorAvailabilities.length - linkedAvailabilities.length
+  };
+}
+
+// Función para reparar enlaces entre datos del tutor y alumno
+function fixTutorStudentLink() {
+  console.log('🔧 Reparando enlaces entre datos del tutor y alumno...');
+  
+  const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+  const tutors = JSON.parse(localStorage.getItem('usuarios') || '[]');
+  const tutorUsers = tutors.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+  
+  let fixedCount = 0;
+  
+  // Reparar cada disponibilidad
+  tutorAvailabilities.forEach((availability, index) => {
+    console.log(`🔧 Reparando disponibilidad ${index + 1}:`, availability);
+    
+    // Buscar el tutor correspondiente
+    let tutor = tutorUsers.find(t => t.nombreCompleto === availability.tutor);
+    if (!tutor && availability.tutorId) {
+      tutor = tutorUsers.find(t => t.id === availability.tutorId);
+    }
+    if (!tutor && availability.tutorEmail) {
+      tutor = tutorUsers.find(t => t.email === availability.tutorEmail);
+    }
+    
+    if (tutor) {
+      console.log('✅ Tutor encontrado, actualizando datos de disponibilidad...');
+      
+      // Actualizar datos de la disponibilidad para que coincidan con el tutor
+      availability.tutor = tutor.nombreCompleto;
+      availability.tutorId = tutor.id;
+      availability.tutorEmail = tutor.email;
+      
+      fixedCount++;
+      console.log('✅ Disponibilidad reparada:', availability);
+    } else {
+      console.log('❌ No se puede reparar: tutor no encontrado');
+    }
+  });
+  
+  // Guardar disponibilidades reparadas
+  localStorage.setItem('tutorAvailability', JSON.stringify(tutorAvailabilities));
+  
+  console.log(`🔧 Reparación completada: ${fixedCount} disponibilidades reparadas`);
+  
+  // Mostrar notificación
+  showNotification(`${fixedCount} enlaces reparados exitosamente`, 'success');
+  
+  return fixedCount;
+}
+
+// Función para verificar usuarios logueados
+function checkLoggedInUsers() {
+  console.log('🔍 Verificando usuarios logueados...');
+  
+  // Verificar sesión de usuario
+  const userSession = JSON.parse(localStorage.getItem('userSession') || sessionStorage.getItem('userSession') || '{}');
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail');
+  const userFullName = localStorage.getItem('userFullName') || sessionStorage.getItem('userFullName');
+  
+  console.log('👤 Datos de sesión del usuario actual:');
+  console.log('- userSession:', userSession);
+  console.log('- userData:', userData);
+  console.log('- userEmail:', userEmail);
+  console.log('- userFullName:', userFullName);
+  
+  // Verificar si hay usuarios en localStorage
+  const usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+  const tutorUsers = usuarios.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+  const studentUsers = usuarios.filter(user => user.rol === 'Alumno' || user.rol === 'alumno');
+  
+  console.log('👥 Usuarios registrados:');
+  console.log('- Total usuarios:', usuarios.length);
+  console.log('- Tutores:', tutorUsers.length);
+  console.log('- Alumnos:', studentUsers.length);
+  
+  // Verificar disponibilidades
+  const tutorAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+  console.log('📊 Disponibilidades configuradas:', tutorAvailabilities.length);
+  
+  return {
+    hasUserSession: Object.keys(userSession).length > 0 || Object.keys(userData).length > 0,
+    totalUsers: usuarios.length,
+    tutors: tutorUsers.length,
+    students: studentUsers.length,
+    availabilities: tutorAvailabilities.length,
+    userSession,
+    userData,
+    userEmail,
+    userFullName
+  };
+}
+
+// Función para crear datos de ejemplo si no existen
+function createSampleDataIfNeeded() {
+  console.log('🔧 Verificando si necesitamos crear datos de ejemplo...');
+  
+  // Verificar si ya existen tutores
+  const existingTutors = JSON.parse(localStorage.getItem('usuarios') || '[]');
+  const tutorUsers = existingTutors.filter(user => user.rol === 'Tutor' || user.rol === 'tutor');
+  
+  // Verificar si ya existen disponibilidades
+  const existingAvailabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+  
+  // Solo crear datos de ejemplo si no hay tutores reales con disponibilidades
+  if (tutorUsers.length === 0 && existingAvailabilities.length === 0) {
+    console.log('📝 Creando datos de ejemplo...');
+    createSampleTutorsAndAvailabilities();
+  } else {
+    console.log('✅ Usando datos reales de tutores y disponibilidades');
+    console.log('📊 Tutores encontrados:', tutorUsers.length);
+    console.log('📊 Disponibilidades encontradas:', existingAvailabilities.length);
+  }
+}
+
+// Función para crear tutores y disponibilidades de ejemplo
+function createSampleTutorsAndAvailabilities() {
+  // Crear tutores de ejemplo
+  const sampleTutors = [
+    {
+      id: 'tutor_001',
+      nombreCompleto: 'Dr. Carlos Mendoza',
+      email: 'carlos.mendoza@tutor.edu',
+      rol: 'Tutor',
+      especialidad: 'Matemáticas',
+      experiencia: 5,
+      calificacion: 4.8
+    },
+    {
+      id: 'tutor_002',
+      nombreCompleto: 'Dra. Ana López',
+      email: 'ana.lopez@tutor.edu',
+      rol: 'Tutor',
+      especialidad: 'Física',
+      experiencia: 3,
+      calificacion: 4.6
+    },
+    {
+      id: 'tutor_003',
+      nombreCompleto: 'Prof. María García',
+      email: 'maria.garcia@tutor.edu',
+      rol: 'Tutor',
+      especialidad: 'Química',
+      experiencia: 4,
+      calificacion: 4.7
+    }
+  ];
+  
+  // Agregar tutores a usuarios existentes
+  const existingUsers = JSON.parse(localStorage.getItem('usuarios') || '[]');
+  const tutorsToAdd = sampleTutors.filter(tutor => 
+    !existingUsers.some(user => user.id === tutor.id)
+  );
+  
+  if (tutorsToAdd.length > 0) {
+    existingUsers.push(...tutorsToAdd);
+    localStorage.setItem('usuarios', JSON.stringify(existingUsers));
+    console.log('✅ Creados', tutorsToAdd.length, 'tutores de ejemplo');
+  }
+  
+  // Crear disponibilidades de ejemplo
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const sampleAvailabilities = [
+    {
+      id: 'avail_001',
+      tutor: 'Dr. Carlos Mendoza',
+      tutorId: 'tutor_001',
+      date: tomorrow.toISOString().split('T')[0],
+      startTime: '10:00',
+      endTime: '11:00',
+      subject: 'matematicas',
+      modality: 'Presencial',
+      duration: 60,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'avail_002',
+      tutor: 'Dr. Carlos Mendoza',
+      tutorId: 'tutor_001',
+      date: tomorrow.toISOString().split('T')[0],
+      startTime: '14:00',
+      endTime: '15:30',
+      subject: 'matematicas',
+      modality: 'Virtual',
+      duration: 90,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'avail_003',
+      tutor: 'Dra. Ana López',
+      tutorId: 'tutor_002',
+      date: tomorrow.toISOString().split('T')[0],
+      startTime: '16:00',
+      endTime: '17:00',
+      subject: 'fisica',
+      modality: 'Presencial',
+      duration: 60,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'avail_004',
+      tutor: 'Prof. María García',
+      tutorId: 'tutor_003',
+      date: tomorrow.toISOString().split('T')[0],
+      startTime: '09:00',
+      endTime: '10:00',
+      subject: 'quimica',
+      modality: 'Virtual',
+      duration: 60,
+      createdAt: new Date().toISOString()
+    }
+  ];
+  
+  localStorage.setItem('tutorAvailability', JSON.stringify(sampleAvailabilities));
+  console.log('✅ Creadas', sampleAvailabilities.length, 'disponibilidades de ejemplo');
+  
+  // Mostrar notificación
+  showNotification('Datos de ejemplo creados automáticamente', 'info');
+}
+
+// ===============================================
+// FUNCIONES DE TIEMPO REAL PARA NUEVAS CLASES
+// ===============================================
+
+// Función para configurar actualizaciones en tiempo real de nuevas clases
+function setupRealTimeClassUpdates() {
+  console.log('🔄 Configurando actualizaciones en tiempo real de clases');
+  
+  // Escuchar eventos de nuevas clases
+  window.addEventListener('newClassAdded', handleNewClassAdded);
+  
+  // Simular verificación periódica de nuevas clases
+  setInterval(checkForNewClasses, 5000); // Cada 5 segundos
+  
+  // Registrar estudiante como conectado
+  registerStudentAsConnected();
+}
+
+// Función para manejar nuevas clases agregadas
+function handleNewClassAdded(event) {
+  try {
+    const { class: newClass, notification } = event.detail;
+    console.log('📢 Nueva clase recibida:', newClass);
+    
+    // Mostrar notificación al usuario
+    showNotification(`Nueva clase disponible: ${newClass.specialty} con ${newClass.name}`, 'success');
+    
+    // Si estamos en la sección de búsqueda de tutores, actualizar la lista
+    const currentSection = document.querySelector('.nav-item.active')?.dataset.section;
+    if (currentSection === 'buscar-tutores') {
+      // Refrescar la búsqueda actual
+      const currentSubject = document.getElementById('subjectFilter')?.value;
+      if (currentSubject && currentSubject === newClass.specialty) {
+        showTutorsBySubject(currentSubject);
+      }
+    }
+    
+    // Guardar notificación
+    saveNotification(notification);
+    
+  } catch (error) {
+    console.error('❌ Error manejando nueva clase:', error);
+  }
+}
+
+// Función para verificar nuevas clases periódicamente
+function checkForNewClasses() {
+  try {
+    const studentId = getCurrentStudentId();
+    if (!studentId) return;
+    
+    const notifications = JSON.parse(localStorage.getItem(`studentNotifications_${studentId}`) || '[]');
+    const unreadNotifications = notifications.filter(notif => !notif.read);
+    
+    if (unreadNotifications.length > 0) {
+      // Procesar notificaciones no leídas
+      unreadNotifications.forEach(notification => {
+        if (notification.type === 'new_class') {
+          handleNewClassAdded({
+            detail: { 
+              class: notification.classData, 
+              notification: notification 
+            }
+          });
+          
+          // Marcar como leída
+          notification.read = true;
+        }
+      });
+      
+      // Guardar notificaciones actualizadas
+      localStorage.setItem(`studentNotifications_${studentId}`, JSON.stringify(notifications));
+    }
+    
+  } catch (error) {
+    console.error('❌ Error verificando nuevas clases:', error);
+  }
+}
+
+// Función para registrar estudiante como conectado
+function registerStudentAsConnected() {
+  try {
+    const studentId = getCurrentStudentId();
+    if (!studentId) return;
+    
+    const connectedStudents = JSON.parse(localStorage.getItem('connectedStudents') || '[]');
+    if (!connectedStudents.includes(studentId)) {
+      connectedStudents.push(studentId);
+      localStorage.setItem('connectedStudents', JSON.stringify(connectedStudents));
+    }
+    
+  } catch (error) {
+    console.error('❌ Error registrando estudiante:', error);
+  }
+}
+
+// Función para obtener ID del estudiante actual
+function getCurrentStudentId() {
+  try {
+    const userSession = JSON.parse(localStorage.getItem('userSession') || '{}');
+    return userSession.usuario?.id || userSession.usuario?.userId || 'student-001';
+  } catch (error) {
+    return 'student-001';
+  }
+}
+
+// Función para guardar notificación
+function saveNotification(notification) {
+  try {
+    const studentId = getCurrentStudentId();
+    const notifications = JSON.parse(localStorage.getItem(`studentNotifications_${studentId}`) || '[]');
+    notifications.push(notification);
+    localStorage.setItem(`studentNotifications_${studentId}`, JSON.stringify(notifications));
+  } catch (error) {
+    console.error('❌ Error guardando notificación:', error);
+  }
+}
+
+// Función para forzar la actualización de sesiones con maestros reales
+function forceUpdateSessionsWithRealTeachers() {
+  try {
+    console.log('🔄 Forzando actualización de sesiones con maestros reales...');
+    
+    // Limpiar sesiones existentes
+    localStorage.removeItem('pendingSessions');
+    localStorage.removeItem('confirmedSessions');
+    localStorage.removeItem('rejectedSessions');
+    localStorage.removeItem('processedSessions');
+    
+    // Recrear sesiones con maestros reales
+    createSampleSessions();
+    
+    // Recargar la sección de inicio si está activa
+    const currentSection = document.querySelector('.nav-item.active')?.dataset.section;
+    if (currentSection === 'inicio') {
+      loadUpcomingSessions();
+    }
+    
+    console.log('✅ Sesiones actualizadas con maestros reales');
+    
+  } catch (error) {
+    console.error('❌ Error actualizando sesiones:', error);
+  }
+}
+
+// Función para sincronizar automáticamente con cambios de disponibilidad de tutores
+function setupTutorAvailabilitySync() {
+  try {
+    console.log('🔄 Configurando sincronización con disponibilidad de tutores...');
+    
+    // Escuchar cambios en localStorage para disponibilidad de tutores
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'tutorAvailability') {
+        console.log('📅 Disponibilidad de tutores actualizada, sincronizando...');
+        
+        // Recargar búsqueda si estamos en la sección de tutores
+        const currentSection = document.querySelector('.nav-item.active')?.dataset.section;
+        if (currentSection === 'tutores') {
+          // Simular búsqueda automática con criterios actuales
+          setTimeout(() => {
+            const subject = document.getElementById('subjectFilter')?.value;
+            if (subject) {
+              console.log('🔄 Recargando búsqueda automáticamente...');
+              searchTutors();
+            }
+          }, 500);
+        }
+      }
+    });
+    
+    // También escuchar cambios en tutorClasses
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'tutorClasses') {
+        console.log('🎓 Clases de tutores actualizadas, sincronizando...');
+        
+        // Recargar búsqueda si estamos en la sección de tutores
+        const currentSection = document.querySelector('.nav-item.active')?.dataset.section;
+        if (currentSection === 'tutores') {
+          setTimeout(() => {
+            const subject = document.getElementById('subjectFilter')?.value;
+            if (subject) {
+              console.log('🔄 Recargando búsqueda automáticamente...');
+              searchTutors();
+            }
+          }, 500);
+        }
+      }
+    });
+    
+    console.log('✅ Sincronización con tutores configurada');
+    
+  } catch (error) {
+    console.error('❌ Error configurando sincronización:', error);
+  }
+}
 

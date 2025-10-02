@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simular Login de Usuarios</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .user-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+        .user-card.active {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .availability-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .availability-item h4 {
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+        }
+        .availability-item p {
+            margin: 2px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-users"></i> Simular Login de Usuarios</h1>
+        <p>Esta página te permite simular el login de diferentes usuarios para probar la integración tutor-alumno con datos reales.</p>
+        
+        <div class="status">
+            <strong>🎯 Objetivo:</strong> Simular que un tutor logueado configura su disponibilidad y un alumno logueado puede encontrarlo usando los mismos datos.
+        </div>
+    </div>
+
+    <div class="container">
+        <h2><i class="fas fa-user-tie"></i> Usuarios Disponibles</h2>
+        <div id="usersList"></div>
+    </div>
+
+    <div class="container">
+        <h2><i class="fas fa-calendar-check"></i> Disponibilidades Configuradas</h2>
+        <div id="availabilitiesList"></div>
+    </div>
+
+    <div class="container">
+        <h2><i class="fas fa-cogs"></i> Acciones</h2>
+        <button class="btn btn-success" onclick="createTestUsers()">
+            <i class="fas fa-plus"></i> Crear Usuarios de Prueba
+        </button>
+        <button class="btn btn-warning" onclick="clearAllData()">
+            <i class="fas fa-trash"></i> Limpiar Todos los Datos
+        </button>
+        <button class="btn" onclick="refreshData()">
+            <i class="fas fa-refresh"></i> Actualizar Vista
+        </button>
+    </div>
+
+    <script>
+        // Crear usuarios de prueba
+        function createTestUsers() {
+            const testUsers = [
+                {
+                    id: 'tutor_001',
+                    nombreCompleto: 'Dr. Carlos Mendoza',
+                    email: 'carlos.mendoza@tutor.edu',
+                    rol: 'Tutor',
+                    especialidad: 'Matemáticas',
+                    experiencia: 5,
+                    calificacion: 4.8
+                },
+                {
+                    id: 'tutor_002',
+                    nombreCompleto: 'Dra. Ana López',
+                    email: 'ana.lopez@tutor.edu',
+                    rol: 'Tutor',
+                    especialidad: 'Física',
+                    experiencia: 3,
+                    calificacion: 4.6
+                },
+                {
+                    id: 'student_001',
+                    nombreCompleto: 'María González',
+                    email: 'maria.gonzalez@student.edu',
+                    rol: 'Alumno',
+                    carrera: 'Ingeniería',
+                    semestre: 3
+                },
+                {
+                    id: 'student_002',
+                    nombreCompleto: 'Juan Pérez',
+                    email: 'juan.perez@student.edu',
+                    rol: 'Alumno',
+                    carrera: 'Medicina',
+                    semestre: 2
+                }
+            ];
+            
+            // Guardar usuarios
+            localStorage.setItem('usuarios', JSON.stringify(testUsers));
+            
+            // Crear disponibilidades de ejemplo
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            const availabilities = [
+                {
+                    id: 'avail_001',
+                    tutor: 'Dr. Carlos Mendoza',
+                    tutorId: 'tutor_001',
+                    tutorEmail: 'carlos.mendoza@tutor.edu',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '10:00',
+                    endTime: '11:00',
+                    subject: 'matematicas',
+                    modality: 'Presencial',
+                    duration: 60,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_002',
+                    tutor: 'Dr. Carlos Mendoza',
+                    tutorId: 'tutor_001',
+                    tutorEmail: 'carlos.mendoza@tutor.edu',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '14:00',
+                    endTime: '15:30',
+                    subject: 'matematicas',
+                    modality: 'Virtual',
+                    duration: 90,
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'avail_003',
+                    tutor: 'Dra. Ana López',
+                    tutorId: 'tutor_002',
+                    tutorEmail: 'ana.lopez@tutor.edu',
+                    date: tomorrow.toISOString().split('T')[0],
+                    startTime: '16:00',
+                    endTime: '17:00',
+                    subject: 'fisica',
+                    modality: 'Presencial',
+                    duration: 60,
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            
+            localStorage.setItem('tutorAvailability', JSON.stringify(availabilities));
+            
+            refreshData();
+            alert('✅ Usuarios y disponibilidades de prueba creados exitosamente');
+        }
+        
+        // Limpiar todos los datos
+        function clearAllData() {
+            if (confirm('¿Estás seguro de que quieres limpiar todos los datos?')) {
+                localStorage.removeItem('usuarios');
+                localStorage.removeItem('tutorAvailability');
+                localStorage.removeItem('userSession');
+                localStorage.removeItem('userData');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('userFullName');
+                refreshData();
+                alert('🗑️ Todos los datos han sido limpiados');
+            }
+        }
+        
+        // Actualizar la vista
+        function refreshData() {
+            displayUsers();
+            displayAvailabilities();
+        }
+        
+        // Mostrar usuarios
+        function displayUsers() {
+            const users = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const usersList = document.getElementById('usersList');
+            
+            if (users.length === 0) {
+                usersList.innerHTML = '<p>No hay usuarios creados. Haz clic en "Crear Usuarios de Prueba".</p>';
+                return;
+            }
+            
+            usersList.innerHTML = users.map(user => `
+                <div class="user-card" id="user-${user.id}">
+                    <h4><i class="fas fa-${user.rol === 'Tutor' ? 'user-tie' : 'user-graduate'}"></i> ${user.nombreCompleto}</h4>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Rol:</strong> ${user.rol}</p>
+                    ${user.especialidad ? `<p><strong>Especialidad:</strong> ${user.especialidad}</p>` : ''}
+                    ${user.carrera ? `<p><strong>Carrera:</strong> ${user.carrera}</p>` : ''}
+                    <button class="btn btn-success" onclick="loginUser('${user.id}')">
+                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                    </button>
+                </div>
+            `).join('');
+        }
+        
+        // Mostrar disponibilidades
+        function displayAvailabilities() {
+            const availabilities = JSON.parse(localStorage.getItem('tutorAvailability') || '[]');
+            const availabilitiesList = document.getElementById('availabilitiesList');
+            
+            if (availabilities.length === 0) {
+                availabilitiesList.innerHTML = '<p>No hay disponibilidades configuradas.</p>';
+                return;
+            }
+            
+            availabilitiesList.innerHTML = availabilities.map(avail => `
+                <div class="availability-item">
+                    <h4><i class="fas fa-calendar-alt"></i> ${avail.tutor}</h4>
+                    <p><strong>Fecha:</strong> ${avail.date}</p>
+                    <p><strong>Horario:</strong> ${avail.startTime} - ${avail.endTime}</p>
+                    <p><strong>Materia:</strong> ${avail.subject}</p>
+                    <p><strong>Modalidad:</strong> ${avail.modality}</p>
+                    <p><strong>Duración:</strong> ${avail.duration} minutos</p>
+                </div>
+            `).join('');
+        }
+        
+        // Simular login de usuario
+        function loginUser(userId) {
+            const users = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            const user = users.find(u => u.id === userId);
+            
+            if (!user) {
+                alert('❌ Usuario no encontrado');
+                return;
+            }
+            
+            // Crear sesión de usuario
+            const userSession = {
+                usuario: {
+                    id: user.id,
+                    nombre_completo: user.nombreCompleto,
+                    fullName: user.nombreCompleto,
+                    email: user.email,
+                    rol: user.rol
+                },
+                loginTime: new Date().toISOString()
+            };
+            
+            // Guardar datos de sesión
+            localStorage.setItem('userSession', JSON.stringify(userSession));
+            localStorage.setItem('userData', JSON.stringify(user));
+            localStorage.setItem('userEmail', user.email);
+            localStorage.setItem('userFullName', user.nombreCompleto);
+            
+            // Actualizar vista
+            document.querySelectorAll('.user-card').forEach(card => card.classList.remove('active'));
+            document.getElementById(`user-${userId}`).classList.add('active');
+            
+            // Mostrar mensaje
+            const roleText = user.rol === 'Tutor' ? 'tutor' : 'alumno';
+            alert(`✅ ${user.nombreCompleto} ha iniciado sesión como ${roleText}`);
+            
+            // Mostrar instrucciones
+            if (user.rol === 'Tutor') {
+                alert(`🎯 Ahora puedes:\n1. Ir a la interfaz de tutores\n2. Configurar disponibilidad\n3. Los datos se guardarán con tu información real`);
+            } else {
+                alert(`🎯 Ahora puedes:\n1. Ir a la interfaz de alumnos\n2. Buscar tutores\n3. Encontrarás las disponibilidades configuradas por tutores reales`);
+            }
+        }
+        
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+        });
+    </script>
+</body>
+</html>
+
